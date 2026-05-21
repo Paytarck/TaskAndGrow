@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Settings · Task & Grow</title>
+    <link rel="stylesheet" href="settings.css">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- ── TOP HEADER ── -->
+    <header class="top-header">
+        <div class="header-row-1">
+            <a href="monthly.html" class="back-btn" title="Back to Monthly">←</a>
+            <div class="header-title-wrap">
+                <span class="page-title">SETTINGS</span>
+            </div>
+            <div class="header-right"></div>
+        </div>
+    </header>
+
+    <!-- ── MAIN ── -->
+    <main class="main-content">
+        
+        <!-- Section Cards (Home View) -->
+        <div id="settings-home" class="settings-home">
+            
+            <!-- Month Management Card -->
+            <div class="settings-section-card" onclick="openSection('month-management')">
+                <div class="section-card-icon">📅</div>
+                <div class="section-card-content">
+                    <h3>MONTH MANAGEMENT</h3>
+                    <p>Jump to next month, auto-jump settings</p>
+                </div>
+                <div class="section-card-arrow">→</div>
+            </div>
+
+            <!-- How It Works Card -->
+            <div class="settings-section-card" onclick="openSection('how-it-works')">
+                <div class="section-card-icon">ℹ️</div>
+                <div class="section-card-content">
+                    <h3>HOW IT WORKS</h3>
+                    <p>Learn about task scopes, reminders, search</p>
+                </div>
+                <div class="section-card-arrow">→</div>
+            </div>
+
+            <!-- Previous Data Card -->
+            <div class="settings-section-card" onclick="openSection('previous-data')">
+                <div class="section-card-icon">📋</div>
+                <div class="section-card-content">
+                    <h3>PREVIOUS RECORDS</h3>
+                    <p>Browse and recover past month data</p>
+                </div>
+                <div class="section-card-arrow">→</div>
+            </div>
+
+            <!-- Daily Sync Card -->
+            <div class="settings-section-card" onclick="openSection('daily-sync')">
+                <div class="section-card-icon">⚡</div>
+                <div class="section-card-content">
+                    <h3>DAILY SYNC</h3>
+                    <p>Sync monthly tasks to your Daily todo automatically</p>
+                </div>
+                <div class="section-card-arrow">→</div>
+            </div>
+
+        </div>
+
+        <!-- ── SECTION DETAILS ── -->
+
+        <!-- Month Management Section -->
+        <div id="section-month-management" class="settings-section-detail" style="display: none;">
+            <div class="section-detail-header">
+                <button class="back-section-btn" onclick="backToHome()">←</button>
+                <h2>Month Management</h2>
+            </div>
+
+            <div class="section-detail-content">
+                
+                <!-- Jump Month Card -->
+                <div class="settings-card">
+                    <div class="settings-info">
+                        <h3>Jump to Next Month</h3>
+                        <p>Automatically import all recurring ("All Months") tasks to the current month and reset their completed status.</p>
+                    </div>
+                    <button class="btn-action" onclick="manualJump()">Jump Now</button>
+                </div>
+
+                <!-- Auto-Jump Toggle -->
+                <div class="settings-card">
+                    <div class="settings-info">
+                        <h3>Auto-Jump</h3>
+                        <p>Automatically advance to the next month when it starts, importing recurring tasks.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="auto-jump-toggle" onchange="toggleAutoJump()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- How It Works Section -->
+        <div id="section-how-it-works" class="settings-section-detail" style="display: none;">
+            <div class="section-detail-header">
+                <button class="back-section-btn" onclick="backToHome()">←</button>
+                <h2>How It Works</h2>
+            </div>
+
+            <div class="section-detail-content">
+                
+                <div class="info-card">
+                    <h4>🎯 Task Scopes</h4>
+                    <p><strong>📌 This Month Only:</strong> Task appears only in the current month. When you jump to the next month, it's archived.</p>
+                    <p><strong>🔁 All Months:</strong> Task is recurring. When you jump to the next month, it's imported as a fresh task (marked incomplete).</p>
+                </div>
+
+                <div class="info-card">
+                    <h4>🔔 Reminders</h4>
+                    <p>Set a reminder time for any task and TaskFlow will notify you at the scheduled time. Browser notifications must be enabled.</p>
+                </div>
+
+                <div class="info-card">
+                    <h4>🔍 Search & Sort</h4>
+                    <p>Use the search button in the navigation to find tasks by name or description. Sort by date, alphabetical order, or completion status.</p>
+                </div>
+
+                <div class="info-card">
+                    <h4>✅ Completing Tasks</h4>
+                    <p>Check off tasks as you complete them. Your progress bar updates in real-time. Completed tasks can be cleared in bulk from any view.</p>
+                </div>
+
+                <div class="info-card">
+                    <h4>📱 Mobile Friendly</h4>
+                    <p>TaskFlow is designed to work seamlessly on all devices. Use the bottom navigation to switch between Daily, Monthly, and Yearly views.</p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Previous Data Section -->
+        <div id="section-previous-data" class="settings-section-detail" style="display: none;">
+            <div class="section-detail-header">
+                <button class="back-section-btn" onclick="backToHome()">←</button>
+                <h2>Previous Records</h2>
+            </div>
+
+            <div class="section-detail-content">
+                
+                <div id="previous-data-list">
+                    <!-- Populated by JavaScript -->
+                </div>
+
+                <div id="no-previous-data" style="display: none; text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 2.5rem; margin-bottom: 16px;">📭</div>
+                    <h3 style="color: var(--text-secondary); margin-bottom: 8px;">No Previous Data</h3>
+                    <p style="color: var(--text-muted);">You haven't created any tasks in previous months yet.</p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Daily Sync Section -->
+        <div id="section-daily-sync" class="settings-section-detail" style="display: none;">
+            <div class="section-detail-header">
+                <button class="back-section-btn" onclick="backToHome()">←</button>
+                <h2>Daily Sync</h2>
+            </div>
+
+            <div class="section-detail-content">
+
+                <!-- Main Daily Sync toggle -->
+                <div class="settings-card">
+                    <div class="settings-info">
+                        <h3>Daily Sync</h3>
+                        <p>When enabled, tasks due <strong>today</strong> from your Monthly list are automatically copied into your <strong>Daily</strong> todo. They appear with an "Imported from Monthly" label.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="daily-sync-toggle" onchange="toggleDailySync()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- Auto Daily Sync toggle -->
+                <div class="settings-card" id="auto-daily-sync-card" style="display:none;">
+                    <div class="settings-info">
+                        <h3>Auto Daily Sync</h3>
+                        <p>Automatically syncs today's monthly tasks to Daily every time you open the app — no manual action needed.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="auto-daily-sync-toggle" onchange="toggleAutoDailySync()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- Status -->
+                <div class="info-card" id="daily-sync-status-card" style="display:none;">
+                    <h4>✅ Daily Sync Active</h4>
+                    <p id="daily-sync-status-text">Today's monthly tasks will be synced to Daily.</p>
+                </div>
+
+                <!-- Manual sync now -->
+                <div class="settings-card" id="daily-sync-now-card" style="display:none;">
+                    <div class="settings-info">
+                        <h3>Sync Today's Tasks Now</h3>
+                        <p>Immediately push all of today's monthly tasks into your Daily todo. Won't create duplicates.</p>
+                    </div>
+                    <button class="btn-action" onclick="confirmDailySyncNow()">Sync Now</button>
+                </div>
+
+                <!-- Clear daily synced -->
+                <div class="settings-card" id="clear-daily-sync-card" style="display:none;">
+                    <div class="settings-info">
+                        <h3>Clear Synced Daily Tasks</h3>
+                        <p>Remove all tasks that were synced from Monthly into Daily. Your original monthly tasks are not affected.</p>
+                    </div>
+                    <button class="btn-action danger" onclick="confirmClearDailySynced()">Clear</button>
+                </div>
+
+                <!-- How it works -->
+                <div class="info-card">
+                    <h4>📋 How Daily Sync works</h4>
+                    <p>• Only tasks whose due day matches <strong>today's date</strong> are synced into Daily.</p>
+                    <br>
+                    <p>• Synced tasks appear in Daily with a badge: <strong>📥 Imported from Monthly</strong>.</p>
+                    <br>
+                    <p>• Each sync runs once per day to avoid duplicates. Use <strong>Sync Now</strong> if you add new tasks later.</p>
+                    <br>
+                    <p>• Completing or deleting a synced task in Daily does not affect the original Monthly task.</p>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ── BOTTOM NAV ── -->
+    <nav class="bottom-nav">
+        <a href="monthly.html" class="nav-item" title="Back to Tasks">
+            <span class="nav-icon">📅</span>
+            <span class="nav-label">Tasks</span>
+        </a>
+        <a href="settings.html" class="nav-item active" title="Settings">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-label">Settings</span>
+        </a>
+    </nav>
+
+    <!-- ── CONFIRM DIALOG ── -->
+    <div class="confirm-overlay" id="confirm-overlay">
+        <div class="confirm-sheet">
+            <div class="confirm-icon-wrap" id="confirm-icon-wrap">
+                <span id="confirm-icon">⚠</span>
+            </div>
+            <h3 class="confirm-title" id="confirm-title">Jump to Next Month?</h3>
+            <p class="confirm-body" id="confirm-body">This will archive "This Month Only" tasks and import recurring tasks for the new month.</p>
+            <div class="confirm-actions">
+                <button class="confirm-cancel" onclick="closeConfirm()">Cancel</button>
+                <button class="confirm-ok" id="confirm-ok">Jump</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── IMPORT CONFIRMATION DIALOG ── -->
+    <div class="confirm-overlay" id="import-confirm-overlay">
+        <div class="confirm-sheet">
+            <div class="confirm-icon-wrap">
+                <span>📥</span>
+            </div>
+            <h3 class="confirm-title">Import All Tasks?</h3>
+            <p class="confirm-body" id="import-confirm-body">This will import tasks from previous month.</p>
+            <div class="confirm-actions">
+                <button class="confirm-cancel" onclick="closeImportConfirm()">Cancel</button>
+                <button class="confirm-ok" onclick="performImportAll(selectiveImportData ? selectiveImportData.month : null)">Import All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── SELECTIVE IMPORT MODAL / PREVIEW MODAL ── -->
+    <div class="modal-overlay" id="selective-import-modal">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <h2 class="modal-title" id="import-modal-title">Select Tasks to Import</h2>
+            <p class="modal-subtitle" id="import-month-label">From Month</p>
+            
+            <div id="selective-import-list" class="selective-import-list">
+                <!-- Populated by JavaScript -->
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeSelectiveImport()">Cancel</button>
+                <button class="btn-save" onclick="performSelectiveImport()">Import Selected</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TOAST ── -->
+    <div class="toast" id="toast"></div>
+
+   <script type="module" src="settings.js"></script>
+
+</body>
+</html>

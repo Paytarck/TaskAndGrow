@@ -1,0 +1,218 @@
+:root {
+    --primary: #6366f1;
+    --daily-grad: linear-gradient(135deg, #ff6b6b, #ee5253);
+    --monthly-grad: linear-gradient(135deg, #48dbfb, #2e86de);
+    --yearly-grad: linear-gradient(135deg, #a29bfe, #6c5ce7);
+    --bg-color: #f8fafc;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --glass: rgba(255, 255, 255, 0.9);
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: var(--bg-color);
+    background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                      radial-gradient(at 100% 100%, rgba(238, 82, 83, 0.1) 0px, transparent 50%);
+    margin: 0;
+    min-height: 100vh;
+    color: var(--text-main);
+}
+
+/* Top Header */
+.top-header {
+    background: var(--glass);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    padding: 15px 40px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--primary);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+.user-avatar {
+    width: 35px;
+    height: 35px;
+    background: var(--primary);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+}
+
+.user-avatar-link {
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.user-avatar-link:hover .user-avatar {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* Hero Section */
+.hero-section {
+    max-width: 1100px;
+    margin: 60px auto;
+    padding: 0 20px;
+    text-align: center;
+}
+
+.welcome-text h1 {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    letter-spacing: -1px;
+}
+
+.highlight { color: var(--primary); }
+
+.welcome-text p {
+    color: var(--text-muted);
+    font-size: 1.1rem;
+    margin-bottom: 50px;
+}
+
+/* Dashboard Grid & Cards */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px;
+}
+
+.nav-card {
+    background: white;
+    border-radius: 24px;
+    padding: 40px 30px;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    border: 1px solid rgba(0,0,0,0.02);
+    position: relative;
+    overflow: hidden;
+}
+
+.nav-card:hover {
+    transform: translateY(-12px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+}
+
+/* Icon Styles */
+.card-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    margin-bottom: 25px;
+}
+
+.daily-card .card-icon { background: var(--daily-grad); }
+.monthly-card .card-icon { background: var(--monthly-grad); }
+.yearly-card .card-icon { background: var(--yearly-grad); }
+
+.nav-card h2 {
+    font-size: 1.6rem;
+    margin: 0 0 10px 0;
+}
+
+.nav-card p {
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 30px;
+    text-align: left;
+}
+
+.card-footer {
+    width: 100%;
+    padding-top: 20px;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--primary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .welcome-text h1 { font-size: 2rem; }
+    .top-header { padding: 15px 20px; }
+}
+
+/* Logo & Brand Styling */
+.logo-link {
+    text-decoration: none;
+    color: inherit;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.app-logo {
+    height: 55px; /* Adjust height to fit your header */
+    width: auto;
+    object-fit: contain;
+}
+
+.app-name {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.5px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Ensure header content is aligned */
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+@media (max-width: 480px) {
+    .app-logo {
+        height: 45px;
+    }
+    .app-name {
+        font-size: 1.2rem;
+    }
+}

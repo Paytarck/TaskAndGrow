@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task & Grow | Personal Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Top Navigation Header -->
+    <header class="top-header">
+    <div class="header-content">
+        <a href="index.html" class="logo-link">
+            <div class="logo-container">
+                <img src="app-logo.png" alt="Task & Grow Logo" class="app-logo">
+                <span class="app-name">Task & Grow</span>
+            </div>
+        </a>
+        <div class="header-right">
+            <div id="sync-status-indicator" style="width: 10px; height: 10px; border-radius: 50%; background-color: #94a3b8; display: inline-block; margin-right: 10px;" title="Sync Status"></div>
+            <span id="header-date"></span>
+            <a href="account.html" class="user-avatar-link">
+                <div class="user-avatar">JS</div>
+            </a>
+        </div>
+    </div>
+</header>
+
+    <main class="hero-section">
+        <div class="welcome-text">
+            <h1>Welcome back, <span class="highlight">Achiever</span></h1>
+            <p>What is your focus for today? Select a category to manage your goals.</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <!-- Daily Card Button -->
+            <a href="daily.html" class="nav-card daily-card">
+                <div class="card-icon">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+                <div class="card-info">
+                    <h2>Daily</h2>
+                    <p>Focus on your immediate tasks and habits.</p>
+                </div>
+                <div class="card-footer">
+                    <span>Manage Tasks</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
+            </a>
+
+            <!-- Monthly Card Button -->
+            <a href="monthly.html" class="nav-card monthly-card">
+                <div class="card-icon">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </div>
+                <div class="card-info">
+                    <h2>Monthly</h2>
+                    <p>Track milestones and medium-term goals.</p>
+                </div>
+                <div class="card-footer">
+                    <span>View Calendar</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
+            </a>
+
+            <!-- Yearly Card Button -->
+            <a href="yearly.html" class="nav-card yearly-card">
+                <div class="card-icon">
+                    <i class="fa-solid fa-star"></i>
+                </div>
+                <div class="card-info">
+                    <h2>Yearly</h2>
+                    <p>Vision board and long-term achievements.</p>
+                </div>
+                <div class="card-footer">
+                    <span>Planning 2024</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </div>
+            </a>
+        </div>
+    </main>
+
+    <script type="module">
+        document.getElementById('header-date').innerText = new Date().toLocaleDateString('en-US', { 
+            weekday: 'long', month: 'short', day: 'numeric' 
+        });
+
+        
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { SyncManager } from './sync-manager.js';
+import { auth } from './firebase-config.js';
+
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        await SyncManager.loadSettings(); 
+        await SyncManager.downloadAllFromCloud(); 
+        // Update user avatar initials
+        const initials = user.email.substring(0, 2).toUpperCase();
+        document.querySelector('.user-avatar').innerText = initials;
+    }
+});
+    </script>
+</body>
+</html>

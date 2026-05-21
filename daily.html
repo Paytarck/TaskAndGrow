@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Daily Tasks · Task & Grow</title>
+    <link rel="stylesheet" href="daily.css">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- ── Top Header ── -->
+    <header class="top-header" id="top-header">
+        <div class="header-row-1">
+            <button class="home-btn" onclick="goHome()" title="Go to Home">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+            </button>
+            
+            <div class="header-title-wrap">
+                <span class="page-title">Daily Tasks</span>
+                <span class="page-date" id="page-date"></span>
+            </div>
+            <div class="header-right">
+                <div id="sync-status-indicator" style="width: 10px; height: 10px; border-radius: 50%; background-color: #94a3b8; display: inline-block; margin-right: 10px;" title="Sync Status"></div>
+                <div class="header-stats" id="header-stats">
+                    <span class="stat-badge done">0</span>
+                    <span class="stat-sep">/</span>
+                    <span class="stat-badge total">0</span>
+                </div>
+            </div>
+        </div>
+        <!-- Row 2: search + sort pills -->
+        <div class="header-row-2">
+            <div class="search-row-top">
+                <div class="search-input-wrap">
+                    <svg class="search-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>
+                    </svg>
+                    <input type="text" id="search-input" class="search-input" placeholder="Search tasks…" autocomplete="off">
+                    <button class="search-clear-btn" id="search-clear-btn" onclick="clearSearch()">✕</button>
+                </div>
+                <button class="search-close-btn" onclick="closeSearch()" title="Close search">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" width="16" height="16">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <!-- Sort pills shown below search bar -->
+            <div class="search-sort-pills">
+                <button class="sort-pill active" data-sort="newest">🕐 Newest</button>
+                <button class="sort-pill" data-sort="oldest">🕐 Oldest</button>
+                <button class="sort-pill" data-sort="alpha-asc">A → Z</button>
+                <button class="sort-pill" data-sort="alpha-desc">Z → A</button>
+                <button class="sort-pill" data-sort="status">Status</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── Main Content ── -->
+    <main class="main-content">
+
+        <!-- Hero Banner -->
+        <div class="hero-banner">
+            <p class="hero-greeting">⚡ Daily Focus</p>
+            <h1 class="hero-heading">What will you<br>accomplish today?</h1>
+            <p class="hero-sub">Check off your tasks as you go. You've got this.</p>
+            <div class="progress-wrap">
+                <div class="progress-label">
+                    <span>Today's progress</span>
+                    <span id="progress-label">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Task Input (triggered via FAB) -->
+        <div class="add-section">
+            <div class="add-task-input-wrapper" id="add-task-input-wrapper" style="display: none;">
+                <input
+                    type="text"
+                    id="task-input"
+                    class="task-input"
+                    placeholder="Type your task…"
+                    autocomplete="off"
+                    maxlength="200"
+                >
+                <div class="add-task-actions">
+                    <button class="add-task-action-btn confirm" onclick="addTask()" title="Add Task">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </button>
+                    <button class="add-task-action-btn cancel" onclick="toggleAddTaskInput()" title="Cancel">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="active">Active</button>
+            <button class="filter-tab" data-filter="completed">Completed</button>
+        </div>
+
+        <!-- Tasks -->
+        <p class="section-label">Tasks</p>
+        <ul class="task-list" id="task-list"></ul>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="empty-state">
+            <div class="empty-icon">📋</div>
+            <h3>No tasks here</h3>
+            <p>Add your first task above<br>and start being productive!</p>
+        </div>
+
+        <!-- Clear Actions Section -->
+        <div class="clear-section">
+            <button class="clear-btn" id="clear-completed-btn" onclick="confirmClearCompleted()" title="Clear completed tasks">
+                Clear completed tasks
+            </button>
+            <button class="clear-btn clear-all-btn" id="clear-all-btn" onclick="confirmClearAll()" title="Clear all tasks">
+                Clear all tasks
+            </button>
+        </div>
+
+    </main>
+
+    <!-- ── Bottom Navigation ── -->
+    <nav class="bottom-nav">
+        <!-- Search -->
+        <button class="nav-item" id="search-nav-btn" onclick="toggleSearch()" title="Search">
+            <span class="nav-icon nav-icon-svg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                    <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>
+                </svg>
+            </span>
+            <span class="nav-label">Search</span>
+        </button>
+        <!-- Add FAB (center) -->
+        <button class="nav-item nav-add" onclick="focusAddInput()" title="Add Task">
+            <span class="nav-add-inner">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+            </span>
+        </button>
+        <!-- Refresh -->
+        <button class="nav-item" id="refresh-nav-btn" onclick="refreshDailyTasks()" title="Refresh">
+            <span class="nav-icon nav-icon-svg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                    <polyline points="23 4 23 10 17 10"></polyline>
+                    <polyline points="1 20 1 14 7 14"></polyline>
+                    <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"></path>
+                </svg>
+            </span>
+            <span class="nav-label">Refresh</span>
+        </button>
+    </nav>
+            <!-- <h3 class="sort-panel-title">Sort Tasks</h3> -->
+            <!-- <div class="sort-pills-panel">
+                <button class="sort-pill active" data-sort="newest">🕐 Newest First</button>
+                <button class="sort-pill" data-sort="oldest">🕐 Oldest First</button>
+                <button class="sort-pill" data-sort="alpha-asc">A → Z</button>
+                <button class="sort-pill" data-sort="alpha-desc">Z → A</button>
+                <button class="sort-pill" data-sort="status">Status</button>
+            </div> -->
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- ── CONFIRM DIALOG ── -->
+    <div class="confirm-overlay" id="confirm-overlay">
+        <div class="confirm-sheet">
+            <div class="confirm-icon-wrap" id="confirm-icon-wrap">
+                <span id="confirm-icon">🗑</span>
+            </div>
+            <h3 class="confirm-title" id="confirm-title">Delete Task?</h3>
+            <p class="confirm-body" id="confirm-body">This action cannot be undone.</p>
+            <div class="confirm-actions">
+                <button class="confirm-cancel" onclick="closeConfirm()">Cancel</button>
+                <button class="confirm-ok" id="confirm-ok">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="daily.js"></script>
+
+</body>
+</html>

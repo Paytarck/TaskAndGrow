@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Yearly Settings · Task & Grow</title>
+    <link rel="stylesheet" href="yearly-settings.css">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- ── TOP HEADER ── -->
+    <header class="top-header">
+        <div class="header-row-1">
+            <a href="javascript:history.back()" class="back-btn" title="Back">←</a>
+            <div class="header-title-wrap">
+                <span class="page-title">YEARLY SETTINGS</span>
+            </div>
+            <div class="header-right"></div>
+        </div>
+    </header>
+
+    <!-- ── MAIN ── -->
+    <main class="main-content">
+
+        <!-- HOME VIEW -->
+        <div id="settings-home" class="settings-home">
+
+            <div class="settings-section-card" onclick="openSection('how-it-works')">
+                <div class="section-card-icon">ℹ️</div>
+                <div class="section-card-content">
+                    <h3>HOW IT WORKS</h3>
+                    <p>Learn about yearly planning, month tasks, and syncing</p>
+                </div>
+                <div class="section-card-arrow">→</div>
+            </div>
+
+            <div class="settings-section-card" onclick="openSection('data-management')">
+                <div class="section-card-icon">🔗</div>
+                <div class="section-card-content">
+                    <h3>DATA MANAGEMENT</h3>
+                    <p>Sync yearly tasks to monthly view automatically</p>
+                </div>
+                <div class="section-card-arrow">→</div>
+            </div>
+
+        </div>
+
+        <!-- ── HOW IT WORKS SECTION ── -->
+        <div id="section-how-it-works" class="settings-section-detail" style="display:none;">
+            <div class="section-detail-header">
+                <button class="back-section-btn" onclick="backToHome()">←</button>
+                <h2>How It Works</h2>
+            </div>
+            <div class="section-detail-content">
+
+                <div class="info-card">
+                    <h4>⭐ Yearly Vision Board</h4>
+                    <p>The <strong>Yearly</strong> page shows all 12 months as cards. Each card displays how many tasks you've planned and completed for that month.</p>
+                </div>
+
+                <div class="info-card">
+                    <h4>📍 Month-Specific Tasks</h4>
+                    <p>Inside each month (this page), you can add tasks tied to a specific <strong>day of the month</strong>. Tasks are sorted by day so you always know what's coming next.</p>
+                </div>
+
+                <div class="info-card">
+                    <h4>⏰ Auto Time</h4>
+                    <p>If you don't set a reminder time when adding a task, it automatically defaults to <strong>11:30 AM</strong>. You can always edit a task to change the time.</p>
+                </div>
+
+                <div class="info-card">
+                    <h4>✅ Completing Tasks</h4>
+                    <p>Tap the circle next to a task to mark it complete. <strong>Note:</strong> completed yearly tasks are locked — they cannot be unchecked, keeping your history accurate.</p>
+                </div>
+
+                <div class="info-card">
+                    <h4>🔍 Search &amp; Sort</h4>
+                    <p>Use the Search button in the bottom nav to filter tasks by name or description. Sort by day (ascending/descending) or alphabetically using the sort pills.</p>
+                </div>
+
+                <div class="info-card">
+                    <h4>🔗 Monthly Sync (Data Management)</h4>
+                    <p>When you enable <strong>Monthly Sync</strong> in Data Management, all tasks in a yearly month are automatically pushed to your Monthly view when that calendar month arrives. Completing the task in Monthly will also check it off here.</p>
+                </div>
+
+                <div class="info-card">
+                    <h4>📱 Navigation</h4>
+                    <p>Use the <strong>bottom navigation bar</strong> to jump between Home, Search, Add Task (+), Refresh, and Settings. From the yearly month detail page the Settings icon leads to this page.</p>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ── DATA MANAGEMENT SECTION ── -->
+        <div id="section-data-management" class="settings-section-detail" style="display:none;">
+            <div class="section-detail-header">
+                <button class="back-section-btn" onclick="backToHome()">←</button>
+                <h2>Data Management</h2>
+            </div>
+            <div class="section-detail-content">
+
+                <!-- Main toggle card -->
+                <div class="settings-card">
+                    <div class="settings-info">
+                        <h3>Monthly Sync</h3>
+                        <p>When enabled, tasks from each yearly month are automatically added to your <strong>Monthly</strong> view when that calendar month begins. Checking a task in Monthly will also mark it complete here.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="sync-toggle" onchange="toggleSync()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- Auto Sync toggle card -->
+                <div class="settings-card" id="auto-sync-card" style="display:none;">
+                    <div class="settings-info">
+                        <h3>Auto Sync</h3>
+                        <p>When enabled, yearly tasks are <strong>automatically synced</strong> to Monthly the moment that calendar month arrives — no manual action needed. Works in the background whenever the app is opened.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="auto-sync-toggle" onchange="toggleAutoSync()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- Status card -->
+                <div class="info-card" id="sync-status-card" style="display:none;">
+                    <h4>✅ Sync Active</h4>
+                    <p id="sync-status-text">Yearly tasks will be synced to monthly automatically.</p>
+                </div>
+
+                <!-- How it works summary -->
+                <div class="info-card">
+                    <h4>📋 What happens when sync is ON</h4>
+                    <p>• When you visit a yearly month page whose calendar month matches the current month, all tasks from that month are copied to <strong>Monthly Tasks</strong> automatically.</p>
+                    <br>
+                    <p>• Each copied task links back to the original yearly task. If you check it off in Monthly, it gets checked here too — in real time.</p>
+                    <br>
+                    <p>• Sync only runs once per month (per year) to avoid duplicates. If you add new tasks later, use the <strong>Re-sync Now</strong> button below.</p>
+                </div>
+
+                <!-- Manual re-sync -->
+                <div class="settings-card" id="resync-card" style="display:none;">
+                    <div class="settings-info">
+                        <h3>Re-sync Current Month</h3>
+                        <p>Push all tasks from the current yearly month into Monthly Tasks again. Safe to run — won't create duplicates.</p>
+                    </div>
+                    <button class="btn-action" onclick="confirmResync()">Re-sync Now</button>
+                </div>
+
+                <!-- Clear sync data -->
+                <div class="settings-card" id="clear-sync-card" style="display:none;">
+                    <div class="settings-info">
+                        <h3>Clear Synced Tasks</h3>
+                        <p>Remove all tasks that were synced from yearly into monthly. This does <strong>not</strong> affect your original yearly tasks.</p>
+                    </div>
+                    <button class="btn-action danger" onclick="confirmClearSynced()">Clear</button>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ── BOTTOM NAV ── -->
+    <nav class="bottom-nav">
+        <a href="yearly.html" class="nav-item" title="Yearly">
+            <span class="nav-icon">⭐</span>
+            <span class="nav-label">Yearly</span>
+        </a>
+        <a href="yearly-settings.html" class="nav-item active" title="Settings">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-label">Settings</span>
+        </a>
+    </nav>
+
+    <!-- ── CONFIRM DIALOG ── -->
+    <div class="confirm-overlay" id="confirm-overlay">
+        <div class="confirm-sheet">
+            <div class="confirm-icon-wrap" id="confirm-icon-wrap">
+                <span id="confirm-icon">⚠</span>
+            </div>
+            <h3 class="confirm-title" id="confirm-title">Are you sure?</h3>
+            <p class="confirm-body" id="confirm-body">This action cannot be undone.</p>
+            <div class="confirm-actions">
+                <button class="confirm-cancel" onclick="closeConfirm()">Cancel</button>
+                <button class="confirm-ok" id="confirm-ok">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── TOAST ── -->
+    <div class="toast" id="toast"></div>
+
+    <script type="module" src="yearly-settings.js"></script>
+
+</body>
+</html>

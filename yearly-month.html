@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Month Deatils · Task & Grow</title>
+    <link rel="stylesheet" href="yearly-month.css">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body id="yearly-detail-body">
+
+    <!-- ── TOP HEADER ── -->
+    <header class="top-header" id="top-header">
+        <div class="header-row-1">
+            <a href="yearly.html" class="back-btn" title="Back to Yearly Hub">←</a>
+            <div class="header-title-wrap">
+                <span class="page-title" id="page-month-name">Month</span>
+                <span class="page-subtitle">Yearly Planning</span>
+            </div>
+            <div class="header-right">
+                <div id="sync-status-indicator" style="width: 10px; height: 10px; border-radius: 50%; background-color: #94a3b8; display: inline-block; margin-right: 10px;" title="Sync Status"></div>
+                <div class="header-stats" id="header-stats">
+                    <span class="stat-badge done">0</span>
+                    <span class="stat-sep">/</span>
+                    <span class="stat-badge total">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search & Sort Row (Expands) -->
+        <div class="header-row-2">
+            <div class="search-row-top">
+                <div class="search-input-wrap">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="search-input" class="search-input" placeholder="Search tasks..." autocomplete="off">
+                    <button class="search-close-btn" id="search-close-btn" onclick="closeSearch()">✕</button>
+                </div>
+            </div>
+            <div class="sort-pills">
+                <button class="sort-pill active" data-sort="date-asc">📅 Day ↑</button>
+                <button class="sort-pill" data-sort="date-desc">📅 Day ↓</button>
+                <button class="sort-pill" data-sort="alpha">A-Z</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- Hero -->
+        <div class="hero-banner">
+            <p class="hero-greeting" id="hero-month-label">YEARLY TODO</p>
+            <h1 class="hero-heading">DATE SPECIFIC<br><span class="hero-accent">YEARLY TODO.</span></h1>
+            <div class="progress-wrap">
+                <div class="progress-label">
+                    <span>Month Progress</span>
+                    <span id="progress-pct">0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="active">Active</button>
+            <button class="filter-tab" data-filter="completed">Completed</button>
+        </div>
+
+        <!-- Task List -->
+        <ul class="task-list" id="task-list"></ul>
+
+        <!-- Empty State -->
+        <div class="empty-state" id="empty-state">
+            <div class="empty-icon">📍</div>
+            <h3>No tasks for this month</h3>
+            <p>Tap the + button to add a task.</p>
+        </div>
+    </main>
+
+    <!-- ── BOTTOM NAV ── -->
+    <nav class="bottom-nav">
+        <!-- Home -->
+        <a href="mainPage.html" class="nav-item" title="Home">
+            <span class="nav-icon nav-icon-svg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                    <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H15v-5h-6v5H4a1 1 0 0 1-1-1V9.5z"/>
+                </svg>
+            </span>
+            <span class="nav-label">Home</span>
+        </a>
+        <!-- Search -->
+        <button class="nav-item" id="search-nav-btn" onclick="toggleSearch()" title="Search">
+            <span class="nav-icon nav-icon-svg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                    <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="22" y2="22"/>
+                </svg>
+            </span>
+            <span class="nav-label">Search</span>
+        </button>
+        <!-- Add FAB (center) -->
+        <button class="nav-item nav-add" onclick="openModal()" title="Add Task">
+            <span class="nav-add-inner">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+            </span>
+        </button>
+        <!-- Refresh -->
+        <button class="nav-item" id="refresh-nav-btn" onclick="refreshPage()" title="Refresh">
+            <span class="nav-icon nav-icon-svg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                </svg>
+            </span>
+            <span class="nav-label">Refresh</span>
+        </button>
+        <!-- Settings -->
+        <a href="yearly-settings.html" class="nav-item" title="Settings">
+            <span class="nav-icon nav-icon-svg">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+            </span>
+            <span class="nav-label">Settings</span>
+        </a>
+    </nav>
+
+    <!-- ── MODAL ── -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <h2 class="modal-title">New Yearly Task</h2>
+            
+            <div class="form-group">
+                <label class="form-label">Task Name *</label>
+                <input type="text" id="input-text" class="form-input" placeholder="What is the task?" maxlength="200">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Description <span class="form-label-opt">(optional)</span></label>
+                <textarea id="input-desc" class="form-input form-textarea" placeholder="Add notes or details..." maxlength="500"></textarea>
+            </div>
+
+            <div class="form-row" style="gap: 16px; margin-bottom: 16px;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Day (1-31) *</label>
+                    <input type="number" id="input-day" class="form-input" min="1" max="31" placeholder="Day">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Time <span class="form-label-opt">(optional)</span></label>
+                    <input type="time" id="input-time" class="form-input">
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+                <button class="btn-save" onclick="saveTask()">Save Task</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── CONFIRM DIALOG ── -->
+    <div class="confirm-overlay" id="confirm-overlay">
+        <div class="confirm-sheet">
+            <div class="confirm-icon-wrap" id="confirm-icon-wrap">
+                <span id="confirm-icon">🗑</span>
+            </div>
+            <h3 class="confirm-title" id="confirm-title">Delete Task?</h3>
+            <p class="confirm-body" id="confirm-body">This action cannot be undone.</p>
+            <div class="confirm-actions">
+                <button class="confirm-cancel" onclick="closeConfirm()">Cancel</button>
+                <button class="confirm-ok" id="confirm-ok">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script type="module" src="yearly-month.js"></script>
+
+</body>
+</html>
