@@ -109,32 +109,22 @@ export const SyncManager = {
      * Listens for changes made on Phone B and updates Phone A automatically
      */
     initRealTimeData(userId, key, callback) {
-        if (this.state.activeListeners[key]) {
-            this.state.activeListeners[key](); // Unsubscribe existing
-        }
+    const docRef = doc(db, "users", userId, "data", key);
+    
+    return onSnapshot(docRef, (snapshot) => {
+        if (snapshot.exists()) {
+            const cloudData = snapshot.data().tasks;
+            const localData = JSON.parse(localStorage.getItem(key)) || [];
 
-        const docRef = doc(db, "users", userId, "data", key);
-        
-        this.state.activeListeners[key] = onSnapshot(docRef, (snapshot) => {
-            if (snapshot.exists()) {
-                const cloudData = snapshot.data().tasks;
-                const localData = JSON.parse(localStorage.getItem(key)) || [];
-
-                // Conflict resolution: Only update if cloud data is actually different
-                if (JSON.stringify(cloudData) !== JSON.stringify(localData)) {
-                    localStorage.setItem(key, JSON.stringify(cloudData));
-                    localStorage.setItem(`${key}_status`, 'synced');
-                    
-                    if (callback) callback(cloudData);
-                    this.updateStatus('synced');
-                    console.log(`Real-time update received for: ${key}`);
-                }
+            // Only update if the cloud version is actually different 
+            // and more recent than our last local save
+            if (JSON.stringify(cloudData) !== JSON.stringify(localData)) {
+                localStorage.setItem(key, JSON.stringify(cloudData));
+                if (callback) callback(cloudData);
             }
-        }, (error) => {
-            console.error(`Listener error for ${key}:`, error);
-            this.updateStatus('error');
-        });
-    },
+        }
+    });
+},
 
     /**
      * PREFERENCES / SETTINGS WATCHER
