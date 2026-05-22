@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account | Task & Grow</title>
+    <link rel="stylesheet" href="account.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="bg-decoration"></div>
+
+    <header class="top-header">
+        <div class="header-content">
+            <div class="header-left">
+                <a href="mainPage.html" class="home-icon-btn" title="Back to Dashboard">
+                    <i class="fa-solid fa-house"></i>
+                </a>
+                <div class="logo-container">
+                    <img src="app-logo.png" alt="Logo" class="app-logo">
+                    <span class="app-name">Task & Grow</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <span id="header-date"></span>
+                <div class="user-avatar" id="avatar-display">U</div>
+            </div>
+        </div>
+    </header>
+
+    <main class="account-main">
+    <!-- VIEW 1: SELECTION -->
+    <section id="view-selection" class="view-container">
+        <div class="account-header">
+            <h1>Account</h1>
+            <p>Manage your sync and profile settings.</p>
+        </div>
+        <div class="account-home-grid">
+            <div class="account-card" onclick="showAuthView('login')">
+                <div class="card-icon login-icon"><i class="fa-solid fa-right-to-bracket"></i></div>
+                <div class="card-details">
+                    <h3>Welcome Back</h3>
+                    <p>Sign in to sync your progress.</p>
+                </div>
+                <i class="fa-solid fa-chevron-right arrow"></i>
+            </div>
+            <div class="account-card" onclick="showAuthView('register')">
+                <div class="card-icon register-icon"><i class="fa-solid fa-user-plus"></i></div>
+                <div class="card-details">
+                    <h3>New Here?</h3>
+                    <p>Create an account to get started.</p>
+                </div>
+                <i class="fa-solid fa-chevron-right arrow"></i>
+            </div>
+        </div>
+    </section>
+
+    <!-- VIEW 2: AUTH (Login/Register) -->
+    <section id="view-auth" class="view-container" style="display: none;">
+        <div class="account-header">
+            <button class="back-link-btn" onclick="showSelectionView()">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </button>
+            <h1 id="auth-title">Sign In</h1>
+        </div>
+
+        <div class="account-tabs">
+            <button class="tab-btn" id="tab-login" onclick="showAuthView('login')">Login</button>
+            <button class="tab-btn" id="tab-register" onclick="showAuthView('register')">Register</button>
+        </div>
+
+        <form id="form-login" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>Email Address</label>
+                <div class="input-wrapper">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="email" id="login-email" placeholder="name@example.com" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <div class="input-wrapper">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="login-password" placeholder="••••••••" required>
+                </div>
+            </div>
+            <div style="text-align: right; margin-bottom: 15px;">
+                <button type="button" class="back-link-btn" onclick="showResetView()" style="font-size: 0.8rem;">Forgot Password?</button>
+            </div>
+            <button type="submit" class="btn-submit">Login</button>
+        </form>
+
+        <form id="form-register" onsubmit="handleRegister(event)" style="display: none;">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" id="reg-fname" class="styled-input" placeholder="John" required>
+                </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" id="reg-lname" class="styled-input" placeholder="Doe" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <div class="input-wrapper">
+                    <i class="fa-solid fa-envelope"></i>
+                    <input type="email" id="reg-email" placeholder="name@example.com" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <div class="input-wrapper">
+                    <i class="fa-solid fa-lock"></i>
+                    <input type="password" id="reg-password" placeholder="Min. 7 characters" required>
+                </div>
+            </div>
+            <div class="password-strength">
+                <div class="strength-bar"><div id="strength-fill" class="strength-fill"></div></div>
+                <span id="strength-text">Strength: None</span>
+            </div>
+            <button type="submit" class="btn-submit">Create Account</button>
+        </form>
+
+        <div class="divider"><span>OR</span></div>
+        <button type="button" class="btn-google" onclick="handleGoogleLogin()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/wait30/google_light.svg" class="google-logo-img" alt="Google"> 
+            Continue with Google
+        </button>
+    </section>
+
+    <!-- VIEW 3: RESET PASSWORD (The new custom form) -->
+    <section id="view-reset" class="view-container" style="display: none;">
+        <div class="account-header">
+            <button class="back-link-btn" onclick="showAuthView('login')">
+                <i class="fa-solid fa-arrow-left"></i> Back to Login
+            </button>
+            <h1>Reset Password</h1>
+            <p>Verify your identity to set a new password.</p>
+        </div>
+
+        <form id="form-verify-identity" onsubmit="handleResetVerification(event)">
+            <div class="form-group">
+                <label>Registered Email</label>
+                <input type="email" id="reset-email" class="styled-input" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" id="reset-fname" class="styled-input" required>
+                </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" id="reset-lname" class="styled-input" required>
+                </div>
+            </div>
+            <button type="submit" class="btn-submit" id="btn-verify">Verify Identity</button>
+        </form>
+
+        <!-- Hidden until identity is verified -->
+        <form id="form-new-password" onsubmit="handlePasswordUpdate(event)" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+            <div class="form-group">
+                <label>Enter New Password</label>
+                <input type="password" id="reset-new-pass" class="styled-input" placeholder="Min. 7 characters" required>
+            </div>
+            <button type="submit" class="btn-submit">Save New Password</button>
+        </form>
+    </section>
+
+    <!-- VIEW 4: SUCCESS / PROFILE -->
+    <section id="view-success" class="view-container" style="display: none;">
+         <div class="profile-header-container">
+        <div id="profile-initials-circle" class="user-initials-large">U</div>
+        <p id="profile-email-display" class="profile-email-text">loading...</p>
+    </div>
+
+        <div class="profile-card">
+            <div class="profile-main-info">
+                <div class="user-text-info">
+                    <h1 id="user-display-name">User Name</h1>
+                    <p>Status: <span style="color: #10b981;">Online</span></p>
+                </div>
+                <button class="logout-btn" onclick="handleLogout()">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </button>
+            </div>
+            
+            <div class="account-card" id="sync-now-card" style="margin-bottom: 20px;">
+                <div class="card-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                <div class="card-details">
+                    <h3>Cloud Backup</h3>
+                    <p id="sync-status">All data is synced.</p>
+                </div>
+                <button class="btn-submit" style="width: auto; padding: 10px 20px;" onclick="handleManualSync()">Sync</button>
+            </div>
+
+            <a href="mainPage.html" class="btn-submit" style="text-decoration: none; text-align: center;">Go to Dashboard</a>
+        </div>
+    </section>
+</main>
+
+    <script type="module" src="account.js"></script>
+
+</body>
+</html>
