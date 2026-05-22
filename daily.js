@@ -321,23 +321,24 @@ function cancelEdit(id) {
 }
 
 // ── Delete Task ──
-function deleteTask(id) {
+async function deleteTask(id) {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
-    const el = document.querySelector(`[data-id="${id}"]`);
-    const doRemove = () => {
-        tasks = tasks.filter(t => t.id !== id);
-        saveTasks();
-        renderAll();
-    };
-    if (el) {
-        el.style.transition = 'all 0.25s ease';
-        el.style.opacity = '0';
-        el.style.transform = 'translateX(20px) scale(0.95)';
-        setTimeout(doRemove, 230);
-    } else { doRemove(); }
-    if (task.fromMonthly) showToast('Task removed from Daily (source kept)');
-    else showToast('Task removed');
+
+    // If this was a synced task, we need to tell the Monthly source to stop syncing it
+    if (task.monthlyTaskId) {
+        let monthlyTasks = JSON.parse(localStorage.getItem('taskflow_monthly_tasks')) || [];
+        const mTask = monthlyTasks.find(mt => mt.id === task.monthlyTaskId);
+        if (mTask) {
+            // Add a hidden flag so the bridge doesn't re-import this
+            mTask.dontSyncToDaily = true; 
+            await SyncManager.saveData('taskflow_monthly_tasks', monthlyTasks);
+        }
+    }
+
+    tasks = tasks.filter(t => t.id !== id);
+    await SyncManager.saveData(STORAGE_KEY, tasks);
+    renderAll();
 }
 
 function confirmDelete(id) {
@@ -660,19 +661,17 @@ async function runMonthlyToDailyBridge() {
     const dueToday = monthlyTasks.filter(mt => mt.dueDay === todayDay && !mt.completed);
 
     dueToday.forEach(mt => {
-        const isAlreadyExported = dailyTasks.find(dt => dt.monthlyTaskId === mt.id);
-
-        if (!isAlreadyExported) {
-            dailyTasks.unshift({
-                id: 'm2d_' + mt.id + '_' + Date.now(),
-                monthlyTaskId: mt.id, // Linking ID
-                text: mt.text,
-                fromMonthly: true,
-                completed: false
-            });
-            hasNewExport = true;
-        }
-    });
+    const isAlreadyExported = dailyTasks.find(dt => dt.monthlyTaskId === mt.id);
+    
+    // ADD THIS CHECK: mt.dontSyncToDaily !== true
+    if (!isAlreadyExported && mt.dontSyncToDaily !== true) {
+        dailyTasks.unshift({
+            id: 'm2d_' + mt.id,
+            monthlyTaskId: mt.id,
+            // ... rest of task
+        });
+    }
+});
 
     if (hasNewExport) {
         // Save to cloud so Phone B receives the daily tasks
@@ -685,16 +684,19 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/fi
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // Phone B will run this if Phone A changes the Monthly list
+        // 1. Download latest from cloud to ensure we have the newest Monthly tasks
+        await SyncManager.downloadAllFromCloud();
+
+        // 2. Start the real-time listener
         SyncManager.initRealTimeData(user.uid, STORAGE_KEY, (updatedData) => {
             tasks = updatedData;
             renderAll();
-            // Automatically check if new monthly tasks arrived for today
-            runMonthlyToDailyBridge(); 
         });
 
-        SyncManager.watchSettings(user.uid);
-        await runMonthlyToDailyBridge();
+        // 3. Run the bridge ONLY after the data is loaded
+        setTimeout(() => {
+            runMonthlyToDailyBridge();
+        }, 1000); // Small delay to let cloud data settle
     }
 });
 
