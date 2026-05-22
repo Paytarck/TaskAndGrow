@@ -560,19 +560,21 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/fi
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // 1. Start real-time listening (If you change data elsewhere, it updates here)
-        // Note: Make sure the storage key matches the page (e.g., 'taskflow_daily_tasks')
-        startRealTimeSync(user.uid, STORAGE_KEY); 
+        // 1. Real-time data listener (STORAGE_KEY varies per page)
+        SyncManager.initRealTimeData(user.uid, STORAGE_KEY, (updatedData) => {
+            tasks = updatedData;
+            renderAll();
+        });
 
-        // 2. Download latest data immediately
-        await SyncManager.downloadAllFromCloud();
-        
-        // 3. Refresh the UI
-        loadTasks();
-        renderAll();
-    } else {
-        // If not logged in, redirect to account or show a message
-        console.log("No user logged in.");
+        // 2. Real-time settings listener (Toggles sync across devices)
+        SyncManager.watchSettings(user.uid);
+
+        // 3. Run the specific bridge for this page
+        if (window.location.pathname.includes('daily.html')) {
+            await runMonthlyToDailyBridge();
+        } else if (window.location.pathname.includes('monthly.html')) {
+            await runYearlyToMonthlyBridge();
+        }
     }
 });
 
