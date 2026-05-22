@@ -322,23 +322,26 @@ function cancelEdit(id) {
 
 // ── Delete Task ──
 async function deleteTask(id) {
-    const task = tasks.find(t => t.id === id);
-    if (!task) return;
+    const taskToDelete = tasks.find(t => t.id === id);
+    if (!taskToDelete) return;
 
-    // If this was a synced task, we need to tell the Monthly source to stop syncing it
-    if (task.monthlyTaskId) {
+    // 1. If it came from Monthly, tell Monthly to stop syncing it
+    if (taskToDelete.monthlyTaskId) {
         let monthlyTasks = JSON.parse(localStorage.getItem('taskflow_monthly_tasks')) || [];
-        const mTask = monthlyTasks.find(mt => mt.id === task.monthlyTaskId);
-        if (mTask) {
-            // Add a hidden flag so the bridge doesn't re-import this
-            mTask.dontSyncToDaily = true; 
+        const sourceIndex = monthlyTasks.findIndex(mt => mt.id === taskToDelete.monthlyTaskId);
+        if (sourceIndex !== -1) {
+            monthlyTasks[sourceIndex].dontSyncToDaily = true;
             await SyncManager.saveData('taskflow_monthly_tasks', monthlyTasks);
         }
     }
 
+    // 2. Remove from local list
     tasks = tasks.filter(t => t.id !== id);
+    
+    // 3. Save to Cloud
     await SyncManager.saveData(STORAGE_KEY, tasks);
     renderAll();
+    showToast("Task deleted ✓");
 }
 
 function confirmDelete(id) {
@@ -648,33 +651,35 @@ function startRealTimeSync(userId, storageKey) {
 }
 
 async function runMonthlyToDailyBridge() {
-    // 1. Only run if Export Button is ON
     if (localStorage.getItem('taskflow_daily_sync_enabled') !== 'true') return;
 
     const todayDay = new Date().getDate();
     const monthlyTasks = JSON.parse(localStorage.getItem('taskflow_monthly_tasks')) || [];
     let dailyTasks = JSON.parse(localStorage.getItem('taskflow_daily_tasks')) || [];
-
     let hasNewExport = false;
 
-    // 2. Find tasks due TODAY in the Monthly list
     const dueToday = monthlyTasks.filter(mt => mt.dueDay === todayDay && !mt.completed);
 
     dueToday.forEach(mt => {
-    const isAlreadyExported = dailyTasks.find(dt => dt.monthlyTaskId === mt.id);
-    
-    // ADD THIS CHECK: mt.dontSyncToDaily !== true
-    if (!isAlreadyExported && mt.dontSyncToDaily !== true) {
-        dailyTasks.unshift({
-            id: 'm2d_' + mt.id,
-            monthlyTaskId: mt.id,
-            // ... rest of task
-        });
-    }
-});
+        // Deterministic ID: NO Date.now()
+        const deterministicId = 'm2d_' + mt.id; 
+        const isAlreadyInDaily = dailyTasks.find(dt => dt.id === deterministicId || dt.monthlyTaskId === mt.id);
+        
+        // Check if the user previously deleted this specific sync
+        if (!isAlreadyInDaily && mt.dontSyncToDaily !== true) {
+            dailyTasks.unshift({
+                id: deterministicId,
+                monthlyTaskId: mt.id,
+                text: mt.text,
+                fromMonthly: true,
+                completed: false,
+                createdAt: new Date().toISOString()
+            });
+            hasNewExport = true;
+        }
+    });
 
     if (hasNewExport) {
-        // Save to cloud so Phone B receives the daily tasks
         await SyncManager.saveData('taskflow_daily_tasks', dailyTasks);
         renderAll();
     }
