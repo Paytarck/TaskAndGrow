@@ -560,21 +560,28 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/fi
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // 1. Real-time data listener (STORAGE_KEY varies per page)
-        SyncManager.initRealTimeData(user.uid, STORAGE_KEY, (updatedData) => {
-            tasks = updatedData;
+        // 1. Initialize Real-Time Listener
+        SyncManager.initRealTimeData(user.uid, STORAGE_KEY, (updatedCloudObject) => {
+            // updatedCloudObject is { "0": [], "1": [], ... }
+            yearlyData = updatedCloudObject || {}; 
+            
+            // CRITICAL FIX: Extract only the tasks for the current month index
+            tasks = yearlyData[mIndex]; 
+            
+            // If the month doesn't exist yet in cloud, default to empty array
+            if (!Array.isArray(tasks)) {
+                tasks = [];
+            }
+            
             renderAll();
+            console.log("Yearly data updated for month:", mIndex);
         });
 
-        // 2. Real-time settings listener (Toggles sync across devices)
         SyncManager.watchSettings(user.uid);
-
-        // 3. Run the specific bridge for this page
-        if (window.location.pathname.includes('daily.html')) {
-            await runMonthlyToDailyBridge();
-        } else if (window.location.pathname.includes('monthly.html')) {
-            await runYearlyToMonthlyBridge();
-        }
+        
+        // 2. Download and check bridge
+        await SyncManager.downloadAllFromCloud();
+        checkAndInjectToMonthly(); 
     }
 });
 
