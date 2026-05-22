@@ -109,20 +109,30 @@ export const SyncManager = {
      * Listens for changes made on Phone B and updates Phone A automatically
      */
     initRealTimeData(userId, key, callback) {
+    if (this.state.activeListeners[key]) {
+        this.state.activeListeners[key](); 
+    }
+
     const docRef = doc(db, "users", userId, "data", key);
     
-    return onSnapshot(docRef, (snapshot) => {
+    this.state.activeListeners[key] = onSnapshot(docRef, (snapshot) => {
         if (snapshot.exists()) {
             const cloudData = snapshot.data().tasks;
-            const localData = JSON.parse(localStorage.getItem(key)) || [];
-
-            // Only update if the cloud version is actually different 
-            // and more recent than our last local save
-            if (JSON.stringify(cloudData) !== JSON.stringify(localData)) {
+            const localDataRaw = localStorage.getItem(key);
+            
+            // Only update if cloud data exists and is different from local
+            if (cloudData && JSON.stringify(cloudData) !== localDataRaw) {
                 localStorage.setItem(key, JSON.stringify(cloudData));
+                localStorage.setItem(`${key}_status`, 'synced');
+                
+                // Trigger UI update
                 if (callback) callback(cloudData);
+                this.updateStatus('synced');
             }
         }
+    }, (error) => {
+        console.error("Listener Error:", error);
+        this.updateStatus('error');
     });
 },
 
