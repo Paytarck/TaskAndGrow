@@ -105,26 +105,36 @@ function checkAndSyncDaily() {
 function performDailySyncInternal() {
     const today = new Date().getDate();
     const todayStr = new Date().toISOString().split('T')[0];
+    
+    // Check if sync is enabled
+    if (localStorage.getItem('taskflow_daily_sync_enabled') !== 'true') return;
+
     const allMonthly = JSON.parse(localStorage.getItem('taskflow_monthly_tasks')) || [];
     const todayTasks = allMonthly.filter(t => !t.completed && t.dueDay === today);
+    
     if (todayTasks.length === 0) return;
+
     let added = 0;
     todayTasks.forEach(mt => {
-        if (tasks.find(t => t.monthlyTaskId === mt.id)) return;
-        tasks.unshift({
-            id: 'm2d_' + mt.id + '_' + Date.now(),
-            monthlyTaskId: mt.id,
-            yearlyTaskId: mt.yearlyTaskId || undefined,
-            yearlyMonthIndex: mt.yearlyMonthIndex !== undefined ? mt.yearlyMonthIndex : undefined,
-            text: mt.text,
-            completed: false,
-            createdAt: new Date().toISOString(),
-            completedAt: null,
-            fromMonthly: true
-        });
-        added++;
+        // Prevent duplicates
+        if (!tasks.find(t => t.monthlyTaskId === mt.id)) {
+            tasks.unshift({
+                id: 'm2d_' + mt.id + '_' + Date.now(),
+                monthlyTaskId: mt.id,
+                text: mt.text,
+                completed: false,
+                createdAt: new Date().toISOString(),
+                fromMonthly: true
+            });
+            added++;
+        }
     });
-    if (added > 0) { saveTasks(); renderAll(); }
+
+    if (added > 0) {
+        // CRITICAL: Save to cloud so Phone B receives the new Daily list
+        SyncManager.saveData(STORAGE_KEY, tasks);
+        renderAll();
+    }
     localStorage.setItem('taskflow_daily_sync_last_' + todayStr, 'true');
 }
 
@@ -636,28 +646,60 @@ function startRealTimeSync(userId, storageKey) {
     });
 }
 
-// This tells the page: "As soon as we know who the user is, get their data."
+async function runMonthlyToDailyBridge() {
+    // 1. Only run if Export Button is ON
+    if (localStorage.getItem('taskflow_daily_sync_enabled') !== 'true') return;
+
+    const todayDay = new Date().getDate();
+    const monthlyTasks = JSON.parse(localStorage.getItem('taskflow_monthly_tasks')) || [];
+    let dailyTasks = JSON.parse(localStorage.getItem('taskflow_daily_tasks')) || [];
+
+    let hasNewExport = false;
+
+    // 2. Find tasks due TODAY in the Monthly list
+    const dueToday = monthlyTasks.filter(mt => mt.dueDay === todayDay && !mt.completed);
+
+    dueToday.forEach(mt => {
+        const isAlreadyExported = dailyTasks.find(dt => dt.monthlyTaskId === mt.id);
+
+        if (!isAlreadyExported) {
+            dailyTasks.unshift({
+                id: 'm2d_' + mt.id + '_' + Date.now(),
+                monthlyTaskId: mt.id, // Linking ID
+                text: mt.text,
+                fromMonthly: true,
+                completed: false
+            });
+            hasNewExport = true;
+        }
+    });
+
+    if (hasNewExport) {
+        // Save to cloud so Phone B receives the daily tasks
+        await SyncManager.saveData('taskflow_daily_tasks', dailyTasks);
+        renderAll();
+    }
+}
+
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // 1. Start real-time listening (If you change data elsewhere, it updates here)
-        // Note: Make sure the storage key matches the page (e.g., 'taskflow_daily_tasks')
-        startRealTimeSync(user.uid, STORAGE_KEY); 
+        // Phone B will run this if Phone A changes the Monthly list
+        SyncManager.initRealTimeData(user.uid, STORAGE_KEY, (updatedData) => {
+            tasks = updatedData;
+            renderAll();
+            // Automatically check if new monthly tasks arrived for today
+            runMonthlyToDailyBridge(); 
+        });
 
-        // 2. Download latest data immediately
-        await SyncManager.downloadAllFromCloud();
-        
-        // 3. Refresh the UI
-        loadTasks();
-        renderAll();
-    } else {
-        // If not logged in, redirect to account or show a message
-        console.log("No user logged in.");
+        SyncManager.watchSettings(user.uid);
+        await runMonthlyToDailyBridge();
     }
 });
 
 // Add this to the end of daily.js
+window.runMonthlyToDailyBridge = runMonthlyToDailyBridge;
 window.addTask = addTask;
 window.toggleTask = toggleTask;
 window.deleteTask = deleteTask;
