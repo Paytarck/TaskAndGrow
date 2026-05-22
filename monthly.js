@@ -852,7 +852,7 @@ async function runYearlyToMonthlyBridge() {
 
         if (!isAlreadyExported && !yt.completed) {
             monthlyTasks.push({
-                id: 'y2m_' + yt.id + '_' + Date.now(),
+                id: 'y2m_' + yt.id, // The ID is now permanent and linked only to the yearly task
                 yearlyTaskId: yt.id, // Linking ID
                 text: yt.text,
                 dueDay: yt.day,
