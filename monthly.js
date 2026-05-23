@@ -284,7 +284,7 @@ function syncNewTaskToDaily(monthlyTask) {
             const existingSync = dailyTasks.find(t => t.monthlyTaskId === monthlyTask.id);
             if (!existingSync) {
                 dailyTasks.unshift({
-                    id: 'm2d_' + monthlyTask.id + '_' + Date.now(),
+                    id: 'm2d_' + monthlyTask.id,
                     monthlyTaskId: monthlyTask.id,
                     yearlyTaskId: monthlyTask.yearlyTaskId || undefined,
                     yearlyMonthIndex: monthlyTask.yearlyMonthIndex || undefined,
@@ -325,19 +325,20 @@ function toggleTask(id) {
     if (task.completed) showToast('Task completed! 🎉');
 }
 
-function syncCompletionToDaily(monthlyTaskId, completed) {
+async function syncCompletionToDaily(monthlyTaskId, completed) {
     try {
         const dailyTasks = JSON.parse(localStorage.getItem('taskflow_daily_tasks')) || [];
         const dailyTask = dailyTasks.find(t => t.monthlyTaskId === monthlyTaskId);
         if (dailyTask) {
             dailyTask.completed = completed;
             dailyTask.completedAt = completed ? new Date().toISOString() : null;
-            localStorage.setItem('taskflow_daily_tasks', JSON.stringify(dailyTasks));
+            // PUSH TO CLOUD
+            await SyncManager.saveData('taskflow_daily_tasks', dailyTasks);
         }
     } catch (e) {}
 }
 
-function syncCompletionToYearly(yearlyTaskId, monthIndex, completed) {
+async function syncCompletionToYearly(yearlyTaskId, monthIndex, completed) {
     if (yearlyTaskId === undefined || monthIndex === undefined) return;
     try {
         const yearlyData = JSON.parse(localStorage.getItem('taskflow_yearly_data')) || {};
@@ -346,9 +347,10 @@ function syncCompletionToYearly(yearlyTaskId, monthIndex, completed) {
         if (yt) {
             yt.completed = completed;
             yearlyData[monthIndex] = monthTasks;
-            localStorage.setItem('taskflow_yearly_data', JSON.stringify(yearlyData));
+            // CRITICAL: This line sends the update to the other phone's Yearly list
+            await SyncManager.saveData('taskflow_yearly_data', yearlyData);
         }
-    } catch(e) {}
+    } catch(e) { console.error("Yearly Sync Error:", e); }
 }
 
 // ── Edit Task ──
@@ -743,7 +745,7 @@ function performDailySyncInternal() {
     todayTasks.forEach(mt => {
         if (!dailyTasks.find(t => t.monthlyTaskId === mt.id)) {
             dailyTasks.unshift({
-                id: 'm2d_' + mt.id + '_' + Date.now(),
+                id: 'm2d_' + monthlyTask.id,
                 monthlyTaskId: mt.id,
                 text: mt.text,
                 completed: false,
