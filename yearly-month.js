@@ -124,33 +124,50 @@ function renderAll() {
     updateStats();
 }
 
-function saveTask() {
-    const text = document.getElementById('input-text').value.trim();
-    const desc = document.getElementById('input-desc').value.trim();
-    const day = document.getElementById('input-day').value;
-    let time = document.getElementById('input-time').value;
+async function saveTask() {
+    const textInput = document.getElementById('input-text');
+    const dayInput = document.getElementById('input-day');
+    const descInput = document.getElementById('input-desc');
+    const timeInput = document.getElementById('input-time');
 
+    const text = textInput.value.trim();
+    const desc = descInput.value.trim();
+    const dayRaw = dayInput.value;
+    const dayNum = parseInt(dayRaw);
+    let time = timeInput.value;
+
+    // --- 1. VALIDATION: EMPTY TEXT ---
     if (!text) {
-        shakeElement(document.getElementById('input-text'));
-        showToast('Please enter a task name');
+        shakeElement(textInput);
+        showToast('Task name cannot be empty.');
         return;
     }
 
-    if (!day) {
-        shakeElement(document.getElementById('input-day'));
-        showToast('Please enter a day (1-31)');
+    // --- 2. VALIDATION: DATE RANGE ---
+    if (!dayRaw || isNaN(dayNum) || dayNum < 1 || dayNum > 31) {
+        shakeElement(dayInput);
+        showToast('Please enter a valid day between 1 and 31.');
         return;
     }
 
-    const dayNum = parseInt(day);
-    if (isNaN(dayNum) || dayNum < 1 || dayNum > 31) {
-        shakeElement(document.getElementById('input-day'));
-        showToast('Please enter a valid day (1-31)');
-        return;
+    // --- 3. VALIDATION: PREVENT PAST DATES (THE NEW FEATURE) ---
+    const now = new Date();
+    const currentMonthIndex = now.getMonth();
+    const currentDayOfMonth = now.getDate();
+
+    // Check if we are viewing the current month
+    if (mIndex === currentMonthIndex) {
+        if (dayNum < currentDayOfMonth) {
+            shakeElement(dayInput);
+            showToast(`🚫 Day ${dayNum} has already passed. Please select a future date.`);
+            return;
+        }
     }
 
+    // Default time if empty
     if (!time) time = '11:30';
 
+    // --- 4. DATA UPDATING ---
     if (editingTaskId) {
         const taskIndex = tasks.findIndex(t => t.id === editingTaskId);
         if (taskIndex !== -1) {
@@ -159,70 +176,148 @@ function saveTask() {
                 text: text,
                 desc: desc,
                 day: dayNum,
-                time: time
+                time: time,
+                lastUpdated: new Date().toISOString()
             };
-            syncEditToMonthlyAndDaily(editingTaskId, text, desc, dayNum, time);
-            showToast('Task updated! ✓');
+            
+            // Push update to Monthly and Daily sync bridges
+            await syncEditToMonthlyAndDaily(editingTaskId, text, desc, dayNum, time);
+            showToast('Task updated successfully! ✓');
         }
         editingTaskId = null;
     } else {
         const newTask = {
-            id: Date.now().toString(),
+            id: 'y_task_' + Date.now() + Math.floor(Math.random() * 1000),
             text: text,
             desc: desc,
             day: dayNum,
             time: time,
-            completed: false
+            completed: false,
+            createdAt: new Date().toISOString()
         };
         tasks.push(newTask);
-        showToast('Task added! ✓');
+        showToast('New yearly task added! ✓');
     }
 
-    saveData();
+    // --- 5. CLOUD PERSISTENCE ---
+    // Save to the yearly structure and push to Firebase
+    yearlyData[mIndex] = tasks;
+    await SyncManager.saveData('taskflow_yearly_data', yearlyData);
+    
+    // Close UI elements
     closeModal();
     renderAll();
-    performImmediateSync();
+    
+    // Run the bridge immediately so it appears in Monthly/Daily without a refresh
+    await runYearlyToMonthlyBridgeLogic();
 }
 
-function syncEditToMonthlyAndDaily(yearlyTaskId, text, desc, day, time) {
-    const syncEnabled = localStorage.getItem('taskflow_yearly_sync_enabled') === 'true';
-    if (!syncEnabled) return;
+async function runYearlyToMonthlyBridgeLogic() {
+    // 1. Safety check: Is the user's sync setting turned on?
+    const isSyncEnabled = localStorage.getItem('taskflow_yearly_sync_enabled') === 'true';
+    if (!isSyncEnabled) return;
 
+    const now = new Date();
+    const currentMonthIndex = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // 2. Access local datasets
+    const yearlyData = JSON.parse(localStorage.getItem('taskflow_yearly_data')) || {};
+    let monthlyTasks = JSON.parse(localStorage.getItem('taskflow_monthly_tasks')) || [];
+    
+    // Get tasks only for the current month we are in
+    const yearlyTasksForThisMonth = yearlyData[currentMonthIndex] || [];
+    let hasNewDataToSync = false;
+
+    // 3. Iterate and create bridges
+    yearlyTasksForThisMonth.forEach(yt => {
+        // Prevent duplicate exports: Check if a monthly task already points to this yearly ID
+        const isAlreadyExported = monthlyTasks.some(mt => mt.yearlyTaskId === yt.id);
+
+        if (!isAlreadyExported && !yt.completed) {
+            // Construct the bridge object
+            const bridgedMonthlyTask = {
+                id: 'y2m_' + yt.id, 
+                yearlyTaskId: yt.id,
+                yearlyMonthIndex: currentMonthIndex,
+                text: yt.text,
+                description: yt.desc || '',
+                dueDay: yt.day,
+                // Create a standard date string for the monthly system
+                dueDate: `${currentYear}-${String(currentMonthIndex + 1).padStart(2, '0')}-${String(yt.day).padStart(2, '0')}`,
+                dueTime: yt.time || '11:30',
+                fromYearly: true,
+                completed: false,
+                createdAt: new Date().toISOString()
+            };
+
+            monthlyTasks.push(bridgedMonthlyTask);
+            hasNewDataToSync = true;
+        }
+    });
+
+    // 4. Persistence: If changes were made, save to Cloud
+    if (hasNewDataToSync) {
+        console.log("Bridge Triggered: Exporting Yearly tasks to Monthly.");
+        await SyncManager.saveData('taskflow_monthly_tasks', monthlyTasks);
+        
+        // If the current page is Monthly, re-render it
+        if (typeof renderAll === 'function' && window.location.pathname.includes('monthly.html')) {
+            renderAll();
+        }
+    }
+}
+
+async function syncEditToMonthlyAndDaily(yearlyTaskId, newText, newDesc, newDay, newTime) {
     try {
         const now = new Date();
         const currentYear = now.getFullYear();
+        const currentMonthIdx = now.getMonth();
 
-        const monthlyTasks = JSON.parse(localStorage.getItem('taskflow_monthly_tasks')) || [];
-        let monthlyChanged = false;
+        // --- PART A: UPDATE MONTHLY TASKS ---
+        let monthlyTasks = JSON.parse(localStorage.getItem('taskflow_monthly_tasks')) || [];
+        let monthlyNeedsUpdate = false;
+
         monthlyTasks.forEach(mt => {
-            if (mt.yearlyTaskId === yearlyTaskId && mt.yearlyMonthIndex === mIndex) {
-                mt.text = text;
-                mt.description = desc || '';
-                mt.dueDay = day;
-                mt.dueTime = time || '11:30';
-                const m = String(mIndex + 1).padStart(2, '0');
-                const d = String(day).padStart(2, '0');
-                mt.dueDate = currentYear + '-' + m + '-' + d;
-                monthlyChanged = true;
+            if (mt.yearlyTaskId === yearlyTaskId) {
+                mt.text = newText;
+                mt.description = newDesc || '';
+                mt.dueDay = newDay;
+                mt.dueTime = newTime;
+                // Re-calculate the specific date string
+                const m = String(currentMonthIdx + 1).padStart(2, '0');
+                const d = String(newDay).padStart(2, '0');
+                mt.dueDate = `${currentYear}-${m}-${d}`;
+                monthlyNeedsUpdate = true;
             }
         });
-        if (monthlyChanged) {
-            localStorage.setItem('taskflow_monthly_tasks', JSON.stringify(monthlyTasks));
+
+        if (monthlyNeedsUpdate) {
+            await SyncManager.saveData('taskflow_monthly_tasks', monthlyTasks);
         }
 
-        const dailyTasks = JSON.parse(localStorage.getItem('taskflow_daily_tasks')) || [];
-        let dailyChanged = false;
+        // --- PART B: UPDATE DAILY TASKS ---
+        let dailyTasks = JSON.parse(localStorage.getItem('taskflow_daily_tasks')) || [];
+        let dailyNeedsUpdate = false;
+
         dailyTasks.forEach(dt => {
+            // Check for direct yearly bridge or monthly bridge that points to this yearly ID
             if (dt.yearlyTaskId === yearlyTaskId) {
-                dt.text = text;
-                dailyChanged = true;
+                dt.text = newText;
+                dailyNeedsUpdate = true;
             }
         });
-        if (dailyChanged) {
-            localStorage.setItem('taskflow_daily_tasks', JSON.stringify(dailyTasks));
+
+        if (dailyNeedsUpdate) {
+            await SyncManager.saveData('taskflow_daily_tasks', dailyTasks);
         }
-    } catch (e) {
-        console.error('syncEditToMonthlyAndDaily error:', e);
+
+        console.log("Propagation Successful: All bridged tasks updated.");
+        return true;
+
+    } catch (error) {
+        console.error("Propagation Failed:", error);
+        return false;
     }
 }
 
