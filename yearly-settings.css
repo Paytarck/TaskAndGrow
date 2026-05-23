@@ -1,334 +1,379 @@
-// ── Storage Keys ──
-const SYNC_KEY = 'taskflow_yearly_sync_enabled';
-const AUTO_SYNC_KEY = 'taskflow_yearly_auto_sync_enabled';
-const YEARLY_KEY = 'taskflow_yearly_data';
-const MONTHLY_KEY = 'taskflow_monthly_tasks';
-const DAILY_KEY = 'taskflow_daily_tasks';
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
-let pendingConfirmCallback = null;
-
-// ── Init ──
-document.addEventListener('DOMContentLoaded', () => {
-    setSyncToggle();
-    updateSyncUI();
-    checkAndPerformAutoSync();
-    
-    // ── FIX: Proper event listener binding ──
-    const confirmOkBtn = document.getElementById('confirm-ok');
-    if (confirmOkBtn) {
-        confirmOkBtn.addEventListener('click', () => {
-            if (typeof pendingConfirmCallback === 'function') {
-                pendingConfirmCallback();
-            }
-            closeConfirm();
-        });
-    }
-
-    const confirmOverlay = document.getElementById('confirm-overlay');
-    if (confirmOverlay) {
-        confirmOverlay.addEventListener('click', (e) => {
-            if (e.target === confirmOverlay) {
-                closeConfirm();
-            }
-        });
-    }
-});
-
-// ── Enhanced Auto Sync ──
-function checkAndPerformAutoSync() {
-    if (localStorage.getItem(SYNC_KEY) !== 'true') return;
-    if (localStorage.getItem(AUTO_SYNC_KEY) !== 'true') return;
-
-    const hasEverSynced = localStorage.getItem('taskflow_yearly_ever_synced') === 'true';
-    if (!hasEverSynced) {
-        performFullAutoSync();
-        localStorage.setItem('taskflow_yearly_ever_synced', 'true');
-        return;
-    }
-
-    performContinuousAutoSync();
+:root {
+    --accent: #3a8c5c;
+    --accent-2: #2d6e48;
+    --accent-soft: rgba(58, 140, 92, 0.12);
+    --accent-glow: rgba(58, 140, 92, 0.22);
+    --bg: #0d0f14;
+    --bg-2: #13161e;
+    --bg-card: #181c26;
+    --bg-card-hover: #1e2332;
+    --border: rgba(255,255,255,0.07);
+    --border-accent: rgba(58, 140, 92, 0.3);
+    --text-primary: #f0f2f8;
+    --text-secondary: #8892a4;
+    --text-muted: #4e5668;
+    --nav-h: 70px;
+    --header-h: 72px;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+    --transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-function performFullAutoSync() {
-    const yearlyData = JSON.parse(localStorage.getItem(YEARLY_KEY)) || {};
-    let monthlyTasks = JSON.parse(localStorage.getItem(MONTHLY_KEY)) || [];
-    let dailyTasks = JSON.parse(localStorage.getItem(DAILY_KEY)) || [];
-    const currentYear = new Date().getFullYear();
-    let addedCount = 0;
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 
-    for (let monthIndex = 0; monthIndex < 12; monthIndex++) {
-        const yearlyTasks = yearlyData[monthIndex] || [];
-        if (yearlyTasks.length === 0) continue;
-
-        yearlyTasks.forEach(yt => {
-            const existingSync = monthlyTasks.find(mt => mt.yearlyTaskId === yt.id);
-            if (existingSync) return;
-
-            const m = String(monthIndex + 1).padStart(2, '0');
-            const d = String(yt.day).padStart(2, '0');
-
-            monthlyTasks.push({
-                id: 'y2m_' + yt.id,
-                yearlyTaskId: yt.id,
-                yearlyMonthIndex: monthIndex,
-                text: yt.text,
-                description: yt.desc || '',
-                dueDay: yt.day,
-                dueDate: currentYear + '-' + m + '-' + d,
-                dueTime: yt.time || '11:30',
-                scope: 'month',
-                completed: yt.completed,
-                completedAt: yt.completed ? new Date().toISOString() : null,
-                createdAt: new Date().toISOString(),
-                fromYearly: true
-            });
-            addedCount++;
-        });
-    }
-
-    if (addedCount > 0) {
-        localStorage.setItem(MONTHLY_KEY, JSON.stringify(monthlyTasks));
-    }
+body {
+    font-family: 'DM Sans', sans-serif;
+    background-color: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding-top: var(--header-h);
+    padding-bottom: calc(var(--nav-h) + 20px);
 }
 
-function performContinuousAutoSync() {
-    const yearlyData = JSON.parse(localStorage.getItem(YEARLY_KEY)) || {};
-    let monthlyTasks = JSON.parse(localStorage.getItem(MONTHLY_KEY)) || [];
-    let dailyTasks = JSON.parse(localStorage.getItem(DAILY_KEY)) || [];
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth();
-    const currentDay = new Date().getDate();
-    let addedToMonthlyCount = 0;
-    let addedToDailyCount = 0;
-
-    for (let i = 0; i < 12; i++) {
-        const monthIndex = (currentMonth + i) % 12;
-        const yearlyTasks = yearlyData[monthIndex] || [];
-        
-        yearlyTasks.forEach(yt => {
-            const existingSync = monthlyTasks.find(mt => mt.yearlyTaskId === yt.id && mt.yearlyMonthIndex === monthIndex);
-            if (existingSync) {
-                if (existingSync.completed !== yt.completed) {
-                    existingSync.completed = yt.completed;
-                    existingSync.completedAt = yt.completed ? new Date().toISOString() : null;
-                }
-                return;
-            }
-
-            let targetYear = currentYear;
-            if (monthIndex < currentMonth) {
-                targetYear = currentYear + 1;
-            }
-
-            const m = String(monthIndex + 1).padStart(2, '0');
-            const d = String(yt.day).padStart(2, '0');
-            const dueDate = targetYear + '-' + m + '-' + d;
-
-            const newMonthlyTask = {
-                id: 'y2m_' + yt.id, 
-                yearlyTaskId: yt.id,
-                yearlyMonthIndex: monthIndex,
-                text: yt.text,
-                description: yt.desc || '',
-                dueDay: yt.day,
-                dueDate: dueDate,
-                dueTime: yt.time || '11:30',
-                scope: 'month',
-                completed: yt.completed,
-                completedAt: yt.completed ? new Date().toISOString() : null,
-                createdAt: new Date().toISOString(),
-                fromYearly: true
-            };
-
-            monthlyTasks.push(newMonthlyTask);
-            addedToMonthlyCount++;
-
-            if (monthIndex === currentMonth && yt.day === currentDay && !yt.completed) {
-                const existingDailySync = dailyTasks.find(dt => dt.yearlyTaskId === yt.id);
-                if (!existingDailySync) {
-                    dailyTasks.push({
-                        id: 'y2d_' + yt.id,
-                        yearlyTaskId: yt.id,
-                        yearlyMonthIndex: monthIndex,
-                        monthlyTaskId: newMonthlyTask.id,
-                        text: yt.text,
-                        completed: false,
-                        createdAt: new Date().toISOString(),
-                        completedAt: null,
-                        fromMonthly: true,
-                        fromYearly: true
-                    });
-                    addedToDailyCount++;
-                }
-            }
-        });
-    }
-
-    if (addedToMonthlyCount > 0 || monthlyTasks.length > 0) {
-        localStorage.setItem(MONTHLY_KEY, JSON.stringify(monthlyTasks));
-    }
-    if (addedToDailyCount > 0 || dailyTasks.length > 0) {
-        localStorage.setItem(DAILY_KEY, JSON.stringify(dailyTasks));
-    }
+body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
 }
 
-// ── Section Navigation ──
-function openSection(section) {
-    document.getElementById('settings-home').style.display = 'none';
-    if (section === 'how-it-works') {
-        document.getElementById('section-how-it-works').style.display = 'block';
-    } else if (section === 'data-management') {
-        document.getElementById('section-data-management').style.display = 'block';
-        updateSyncUI();
-    }
+/* ── HEADER ── */
+.top-header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--header-h);
+    background: rgba(13,15,20,0.92);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
 }
 
-function backToHome() {
-    document.getElementById('settings-home').style.display = 'flex';
-    document.getElementById('section-how-it-works').style.display = 'none';
-    document.getElementById('section-data-management').style.display = 'none';
+.header-row-1 {
+    height: var(--header-h);
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    gap: 12px;
 }
 
-// ── Sync Toggle ──
-function setSyncToggle() {
-    const toggle = document.getElementById('sync-toggle');
-    if (toggle) toggle.checked = localStorage.getItem(SYNC_KEY) === 'true';
-    const autoToggle = document.getElementById('auto-sync-toggle');
-    if (autoToggle) autoToggle.checked = localStorage.getItem(AUTO_SYNC_KEY) === 'true';
+.back-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 1rem;
+    transition: var(--transition); flex-shrink: 0;
+}
+.back-btn:hover { background: var(--accent-soft); border-color: var(--border-accent); color: var(--accent); }
+
+.header-title-wrap { flex: 1; min-width: 0; }
+.page-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem; font-weight: 700;
+    color: var(--text-primary); line-height: 1.2;
+    display: block;
 }
 
-function toggleSync() {
-    const enabled = document.getElementById('sync-toggle').checked;
-    localStorage.setItem(SYNC_KEY, enabled ? 'true' : 'false');
-    // This pushes the toggle state to Phone B
-    SyncManager.saveSettings(); 
-    updateSyncUI();
+.header-right { flex-shrink: 0; }
+
+/* ── MAIN ── */
+.main-content {
+    position: relative; z-index: 1;
+    max-width: 680px; margin: 0 auto;
+    padding: 22px 16px 16px;
 }
 
-function toggleAutoSync() {
-    const toggle = document.getElementById('auto-sync-toggle');
-    const enabled = toggle.checked;
-    localStorage.setItem(AUTO_SYNC_KEY, enabled ? 'true' : 'false');
-    
-    if (enabled) {
-        performFullAutoSync();
-    }
-    
-    updateSyncUI();
-    showToast(enabled ? '⚡ Auto Sync enabled — syncs continuously' : 'Auto Sync disabled');
+/* ── HOME VIEW ── */
+.settings-home {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    animation: fadeIn 0.3s ease;
 }
 
-function updateSyncUI() {
-    const enabled = localStorage.getItem(SYNC_KEY) === 'true';
-    const autoEnabled = localStorage.getItem(AUTO_SYNC_KEY) === 'true';
-
-    const statusCard = document.getElementById('sync-status-card');
-    const resyncCard = document.getElementById('resync-card');
-    const clearCard = document.getElementById('clear-sync-card');
-    const autoSyncCard = document.getElementById('auto-sync-card');
-
-    if (autoSyncCard) autoSyncCard.style.display = enabled ? 'flex' : 'none';
-    if (statusCard) statusCard.style.display = enabled ? 'block' : 'none';
-    if (resyncCard) resyncCard.style.display = enabled ? 'flex' : 'none';
-    if (clearCard) clearCard.style.display = enabled ? 'flex' : 'none';
-
-    if (enabled) {
-        const yearlyData = JSON.parse(localStorage.getItem(YEARLY_KEY)) || {};
-        const currentMonth = new Date().getMonth();
-        const currentTasks = yearlyData[currentMonth] || [];
-        const el = document.getElementById('sync-status-text');
-        if (el) {
-            const autoNote = autoEnabled ? ' Auto Sync is ON — syncs all months continuously.' : '';
-            el.textContent = currentTasks.length > 0
-                ? `${currentTasks.length} task${currentTasks.length !== 1 ? 's' : ''} from ${months[currentMonth]} are synced and will update continuously.${autoNote}`
-                : `No tasks found for ${months[currentMonth]} yet. Add tasks in the yearly month view.${autoNote}`;
-        }
-    }
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-// ── Re-sync ──
-function confirmResync() {
-    showConfirm({
-        icon: '🔄',
-        title: 'Re-sync All Months?',
-        body: `All yearly tasks will be pushed to Monthly and Daily Tasks with full sync. Existing synced tasks will be updated if changed.`,
-        okLabel: 'Re-sync',
-        onOk: performFullAutoSync
-    });
+/* ── SECTION CARDS ── */
+.settings-section-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 18px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: var(--transition);
 }
 
-// ── Clear Synced Tasks ──
-function confirmClearSynced() {
-    const monthlyTasks = JSON.parse(localStorage.getItem(MONTHLY_KEY)) || [];
-    const dailyTasks = JSON.parse(localStorage.getItem(DAILY_KEY)) || [];
-    const syncedMonthlyCount = monthlyTasks.filter(t => t.fromYearly).length;
-    const syncedDailyCount = dailyTasks.filter(t => t.fromYearly).length;
-    const totalSynced = syncedMonthlyCount + syncedDailyCount;
-
-    showConfirm({
-        icon: '🗑',
-        title: 'Clear Synced Tasks?',
-        body: `This will remove ${totalSynced} synced task${totalSynced !== 1 ? 's' : ''} from Monthly and Daily Tasks. Your original yearly tasks are not affected.`,
-        okLabel: 'Clear',
-        onOk: performClearSynced
-    });
+.settings-section-card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-accent);
+    transform: translateX(4px);
 }
 
-function performClearSynced() {
-    let monthlyTasks = JSON.parse(localStorage.getItem(MONTHLY_KEY)) || [];
-    let dailyTasks = JSON.parse(localStorage.getItem(DAILY_KEY)) || [];
-    
-    const beforeMonthly = monthlyTasks.length;
-    const beforeDaily = dailyTasks.length;
-    
-    monthlyTasks = monthlyTasks.filter(t => !t.fromYearly);
-    dailyTasks = dailyTasks.filter(t => !t.fromYearly);
-    
-    localStorage.setItem(MONTHLY_KEY, JSON.stringify(monthlyTasks));
-    localStorage.setItem(DAILY_KEY, JSON.stringify(dailyTasks));
-    localStorage.setItem('taskflow_yearly_ever_synced', 'false');
-    
-    const removedMonthly = beforeMonthly - monthlyTasks.length;
-    const removedDaily = beforeDaily - dailyTasks.length;
-    const totalRemoved = removedMonthly + removedDaily;
-    
-    showToast(`Removed ${totalRemoved} synced task${totalRemoved !== 1 ? 's' : ''}`);
-    updateSyncUI();
+.section-card-icon { font-size: 1.8rem; flex-shrink: 0; }
+
+.section-card-content { flex: 1; min-width: 0; }
+
+.section-card-content h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    color: var(--text-primary); margin-bottom: 4px;
 }
 
-// ── Confirm Dialog ──
-function showConfirm({ icon, title, body, okLabel, onOk }) {
-    document.getElementById('confirm-icon').textContent = icon || '⚠';
-    document.getElementById('confirm-title').textContent = title || 'Are you sure?';
-    document.getElementById('confirm-body').textContent = body || 'This action cannot be undone.';
-    const okBtn = document.getElementById('confirm-ok');
-    okBtn.textContent = okLabel || 'Confirm';
-    pendingConfirmCallback = onOk;
-    document.getElementById('confirm-overlay').classList.add('open');
+.section-card-content p {
+    font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;
 }
 
-function closeConfirm() {
-    document.getElementById('confirm-overlay').classList.remove('open');
-    pendingConfirmCallback = null;
+.section-card-arrow {
+    font-size: 1.3rem; color: var(--accent);
+    flex-shrink: 0; opacity: 0.6; transition: var(--transition);
+}
+.settings-section-card:hover .section-card-arrow { opacity: 1; transform: translateX(2px); }
+
+/* ── SECTION DETAILS ── */
+.settings-section-detail {
+    animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-// ── Toast ──
-let toastTimer;
-function showToast(msg) {
-    const t = document.getElementById('toast');
-    if (!t) return;
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+@keyframes slideIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
 }
 
-window.openSection = openSection;
-window.backToHome = backToHome;
-window.toggleSync = toggleSync;
-window.toggleAutoSync = toggleAutoSync;
-window.confirmResync = confirmResync;
-window.confirmClearSynced = confirmClearSynced;
-window.closeConfirm = closeConfirm;
+.section-detail-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 24px; padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.back-section-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text-secondary); font-size: 1rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: var(--transition); flex-shrink: 0;
+}
+.back-section-btn:hover { background: var(--accent-soft); border-color: var(--border-accent); color: var(--accent); }
+
+.section-detail-header h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.25rem; font-weight: 700;
+    color: var(--text-primary);
+}
+
+.section-detail-content { display: flex; flex-direction: column; gap: 16px; }
+
+/* ── INFO CARDS ── */
+.info-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 18px 16px;
+}
+
+.info-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem; font-weight: 700;
+    color: var(--text-primary); margin-bottom: 10px;
+}
+
+.info-card p {
+    font-size: 0.82rem; color: var(--text-secondary); line-height: 1.65;
+}
+
+/* ── SETTINGS CARD (toggle rows) ── */
+.settings-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 18px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: var(--transition);
+}
+.settings-card:hover { background: var(--bg-card-hover); border-color: rgba(58,140,92,0.2); }
+
+.settings-info { flex: 1; min-width: 0; }
+
+.settings-info h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem; font-weight: 700;
+    color: var(--text-primary); margin-bottom: 5px;
+}
+
+.settings-info p {
+    font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;
+}
+
+/* ── TOGGLE SWITCH ── */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px; height: 28px;
+    flex-shrink: 0;
+}
+
+.switch input { display: none; }
+
+.slider {
+    position: absolute; inset: 0;
+    background: var(--bg-2);
+    border: 1px solid var(--border);
+    border-radius: 34px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.slider::before {
+    content: '';
+    position: absolute;
+    height: 20px; width: 20px;
+    left: 3px; bottom: 3px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    transition: var(--transition);
+}
+
+.switch input:checked + .slider {
+    background: var(--accent-soft);
+    border-color: var(--border-accent);
+}
+
+.switch input:checked + .slider::before {
+    background: var(--accent);
+    transform: translateX(22px);
+    box-shadow: 0 0 8px rgba(58,140,92,0.5);
+}
+
+/* ── ACTION BUTTONS ── */
+.btn-action {
+    padding: 10px 20px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-accent);
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem; font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.btn-action:hover { background: rgba(58,140,92,0.2); transform: translateY(-1px); }
+.btn-action.danger {
+    border-color: rgba(255, 90, 90, 0.35);
+    background: rgba(255, 90, 90, 0.08);
+    color: #ff6b6b;
+}
+.btn-action.danger:hover { background: rgba(255, 90, 90, 0.16); }
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: var(--nav-h);
+    background: rgba(13,15,20,0.95);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border); z-index: 100;
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 0 10px; padding-bottom: env(safe-area-inset-bottom,0);
+}
+.nav-item {
+    text-decoration: none; color: var(--text-muted);
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 8px 20px; border-radius: 10px;
+    transition: var(--transition); min-width: 50px;
+}
+.nav-item:hover { color: var(--text-secondary); }
+.nav-item.active { color: var(--accent); }
+.nav-icon { font-size: 1.1rem; line-height: 1; }
+.nav-label { font-size: 0.62rem; font-weight: 600; letter-spacing: 0.04em; }
+.nav-item.active .nav-icon { filter: drop-shadow(0 0 6px rgba(58,140,92,0.5)); }
+
+/* ── CONFIRM DIALOG ── */
+.confirm-overlay {
+    position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,0,0,0.7); backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.22s ease; padding: 20px;
+}
+.confirm-overlay.open { opacity: 1; pointer-events: all; }
+.confirm-sheet {
+    background: var(--bg-2); border: 1px solid var(--border);
+    border-radius: 22px; width: 100%; max-width: 320px;
+    padding: 28px 24px 24px; text-align: center;
+    transform: scale(0.9) translateY(10px);
+    transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+}
+.confirm-overlay.open .confirm-sheet { transform: scale(1) translateY(0); }
+
+.confirm-icon-wrap {
+    width: 60px; height: 60px; border-radius: 50%;
+    background: var(--accent-soft); border: 1px solid var(--border-accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; margin: 0 auto 16px;
+}
+.confirm-title {
+    font-family: 'Syne', sans-serif; font-size: 1.05rem; font-weight: 700;
+    color: var(--text-primary); margin-bottom: 8px;
+}
+.confirm-body {
+    font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 22px;
+}
+.confirm-actions { display: flex; gap: 10px; }
+.confirm-cancel {
+    flex: 1; padding: 11px; border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: none;
+    color: var(--text-secondary); font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: var(--transition);
+}
+.confirm-cancel:hover { background: rgba(255,255,255,0.04); }
+.confirm-ok {
+    flex: 1; padding: 11px; border-radius: var(--radius-sm);
+    border: none; background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: var(--transition);
+}
+.confirm-ok:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(58,140,92,0.3); }
+
+/* ── TOAST ── */
+.toast {
+    position: fixed; bottom: calc(var(--nav-h) + 14px); left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--bg-card-hover); border: 1px solid var(--border);
+    border-radius: 30px; padding: 9px 18px;
+    font-size: 0.8rem; color: var(--text-secondary);
+    white-space: nowrap; opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    z-index: 200; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+    .main-content { padding: 16px 12px 12px; }
+    .settings-card { flex-wrap: wrap; }
+    .btn-action { align-self: flex-end; }
+}
+@media (max-width: 480px) {
+    .header-row-1 { padding: 0 14px; }
+    .page-title { font-size: 1rem; }
+    .section-detail-header h2 { font-size: 1.1rem; }
+    .nav-item { padding: 8px 12px; min-width: 40px; }
+}
