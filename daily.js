@@ -119,7 +119,7 @@ function performDailySyncInternal() {
         // Prevent duplicates
         if (!tasks.find(t => t.monthlyTaskId === mt.id)) {
             tasks.unshift({
-                id: 'm2d_' + mt.id + '_' + Date.now(),
+                id: 'm2d_' + mt.id,
                 monthlyTaskId: mt.id,
                 text: mt.text,
                 completed: false,
@@ -227,47 +227,62 @@ function focusAddInput() {
 }
 
 // ── Toggle Complete ──
-function toggleTask(id) {
+async function toggleTask(id) {
     const task = tasks.find(t => t.id === id);
     if (!task) return;
     if (task.completed) { showToast('Completed tasks cannot be unchecked'); renderAll(); return; }
+    
     task.completed = true;
     task.completedAt = new Date().toISOString();
-    saveTasks();
+    
+    await saveTasks(); // Saves Daily to Cloud
     renderAll();
-    if (task.monthlyTaskId) syncCompletionToMonthly(task.monthlyTaskId, true);
-    if (task.yearlyTaskId !== undefined) syncCompletionToYearly(task.yearlyTaskId, task.yearlyMonthIndex, true);
+    
+    // This part tells the other lists (Monthly/Yearly) to complete too
+    if (task.monthlyTaskId) await syncCompletionToMonthly(task.monthlyTaskId, true);
+    if (task.yearlyTaskId !== undefined) await syncCompletionToYearly(task.yearlyTaskId, task.yearlyMonthIndex, true);
+    
     showToast('Task completed! 🎉');
 }
-
 // ── Sync completion ──
-function syncCompletionToMonthly(monthlyTaskId, completed) {
+async function syncCompletionToMonthly(monthlyTaskId, completed) {
     try {
         const monthlyTasks = JSON.parse(localStorage.getItem('taskflow_monthly_tasks')) || [];
-        const monthlyTask = monthlyTasks.find(t => t.id === monthlyTaskId);
+        const monthlyTask = monthlyTasks.find(t => t.id === monthlyTaskId || t.id === 'y2m_'+monthlyTaskId);
         if (monthlyTask) {
             monthlyTask.completed = completed;
             monthlyTask.completedAt = completed ? new Date().toISOString() : null;
-            localStorage.setItem('taskflow_monthly_tasks', JSON.stringify(monthlyTasks));
-            if (monthlyTask.yearlyTaskId !== undefined)
+            // CRITICAL: Push updated monthly list to cloud
+            await SyncManager.saveData('taskflow_monthly_tasks', monthlyTasks);
+            
+            if (monthlyTask.yearlyTaskId !== undefined) {
                 syncCompletionToYearly(monthlyTask.yearlyTaskId, monthlyTask.yearlyMonthIndex, completed);
+            }
         }
-    } catch(e) {}
+    } catch(e) { console.error(e); }
 }
-function syncCompletionToYearly(yearlyTaskId, monthIndex, completed) {
-    if (yearlyTaskId === undefined || monthIndex === undefined) return;
+async function syncCompletionToYearly(yearlyTaskId, monthIndex, completed) {
     try {
         const yearlyData = JSON.parse(localStorage.getItem('taskflow_yearly_data')) || {};
+        // If monthIndex is missing, find it
+        if (monthIndex === undefined) {
+            for (let i = 0; i < 12; i++) {
+                if (yearlyData[i]?.find(t => t.id === yearlyTaskId)) {
+                    monthIndex = i;
+                    break;
+                }
+            }
+        }
         const monthTasks = yearlyData[monthIndex] || [];
         const yearlyTask = monthTasks.find(t => t.id === yearlyTaskId);
         if (yearlyTask) {
             yearlyTask.completed = completed;
             yearlyData[monthIndex] = monthTasks;
-            localStorage.setItem('taskflow_yearly_data', JSON.stringify(yearlyData));
+            // CRITICAL: Push updated yearly list to cloud
+            await SyncManager.saveData('taskflow_yearly_data', yearlyData);
         }
-    } catch(e) {}
+    } catch(e) { console.error(e); }
 }
-
 // ── Edit Task ──
 function startEdit(id) {
     const task = tasks.find(t => t.id === id);
@@ -662,15 +677,12 @@ async function runMonthlyToDailyBridge() {
 
     dueToday.forEach(mt => {
         // Deterministic ID: NO Date.now()
-        const deterministicId = 'm2d_' + mt.id; 
-        const isAlreadyInDaily = dailyTasks.find(dt => dt.id === deterministicId || dt.monthlyTaskId === mt.id);
-        
-        // Check if the user previously deleted this specific sync
-        if (!isAlreadyInDaily && mt.dontSyncToDaily !== true) {
-            dailyTasks.unshift({
-                id: deterministicId,
-                monthlyTaskId: mt.id,
-                text: mt.text,
+       const deterministicId = 'm2d_' + mt.id;
+if (!tasks.find(t => t.id === deterministicId)) {
+    tasks.unshift({
+        id: deterministicId, 
+        monthlyTaskId: mt.id,
+        text: mt.text,
                 fromMonthly: true,
                 completed: false,
                 createdAt: new Date().toISOString()
@@ -689,22 +701,55 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/fi
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // 1. Download latest from cloud to ensure we have the newest Monthly tasks
-        await SyncManager.downloadAllFromCloud();
-
-        // 2. Start the real-time listener
+        // 1. Listen to Daily Tasks
         SyncManager.initRealTimeData(user.uid, STORAGE_KEY, (updatedData) => {
             tasks = updatedData;
             renderAll();
         });
 
-        // 3. Run the bridge ONLY after the data is loaded
-        setTimeout(() => {
+        // 2. Listen to Monthly Tasks (This triggers the bridge automatically)
+        SyncManager.initRealTimeData(user.uid, 'taskflow_monthly_tasks', () => {
             runMonthlyToDailyBridge();
-        }, 1000); // Small delay to let cloud data settle
+        });
+
+        // 3. Listen to Yearly Tasks
+        SyncManager.initRealTimeData(user.uid, 'taskflow_yearly_data', async () => {
+            await runYearlyToMonthlyBridgeLogic(); 
+            runMonthlyToDailyBridge();
+        });
+
+        SyncManager.watchSettings(user.uid);
+        await SyncManager.downloadAllFromCloud();
+        runMonthlyToDailyBridge();
     }
 });
 
+async function runYearlyToMonthlyBridgeLogic() {
+    if (localStorage.getItem('taskflow_yearly_sync_enabled') !== 'true') return;
+    const currentMonthIndex = new Date().getMonth();
+    const yearlyData = JSON.parse(localStorage.getItem('taskflow_yearly_data')) || {};
+    let monthlyTasks = JSON.parse(localStorage.getItem('taskflow_monthly_tasks')) || [];
+    const yearlyTasksForThisMonth = yearlyData[currentMonthIndex] || [];
+    let hasNewExport = false;
+
+    yearlyTasksForThisMonth.forEach(yt => {
+        const isAlreadyExported = monthlyTasks.find(mt => mt.yearlyTaskId === yt.id);
+        if (!isAlreadyExported && !yt.completed) {
+            monthlyTasks.push({
+                id: 'y2m_' + yt.id,
+                yearlyTaskId: yt.id,
+                text: yt.text,
+                dueDay: yt.day,
+                fromYearly: true,
+                completed: false
+            });
+            hasNewExport = true;
+        }
+    });
+    if (hasNewExport) {
+        await SyncManager.saveData('taskflow_monthly_tasks', monthlyTasks);
+    }
+}
 // Add this to the end of daily.js
 window.runMonthlyToDailyBridge = runMonthlyToDailyBridge;
 window.addTask = addTask;
@@ -722,3 +767,4 @@ window.confirmClearAll = confirmClearAll;
 window.startEdit = startEdit;
 window.goHome = goHome;
 window.closeConfirm = closeConfirm; // Critical for the dialog to close
+window.runYearlyToMonthlyBridgeLogic = runYearlyToMonthlyBridgeLogic;
