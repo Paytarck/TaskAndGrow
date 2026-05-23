@@ -29,6 +29,36 @@ export const SyncManager = {
         }
     },
 
+    // NEW: Centralized Header Manager
+    initHeader(auth, db) {
+        const indicator = document.getElementById('sync-status-indicator');
+        const avatar = document.querySelector('.user-avatar') || document.getElementById('avatar-display') || document.getElementById('profile-initials-circle');
+        const dateEl = document.getElementById('header-date') || document.getElementById('page-date');
+
+        // Set Date
+        if (dateEl) {
+            dateEl.innerText = new Date().toLocaleDateString('en-US', { 
+                weekday: 'long', month: 'short', day: 'numeric' 
+            });
+        }
+
+        // Listen for Auth to set Initials
+        import('https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js').then(({ onAuthStateChanged }) => {
+            onAuthStateChanged(auth, async (user) => {
+                if (user && avatar) {
+                    const name = user.displayName || user.email.split('@')[0];
+                    const parts = name.trim().split(/\s+/);
+                    const initials = parts.length > 1 
+                        ? (parts[0][0] + parts[parts.length-1][0]).toUpperCase()
+                        : parts[0].substring(0, 2).toUpperCase();
+                    avatar.innerText = initials;
+                }
+            });
+        });
+
+        this.updateStatus('synced'); // Initial state
+    },
+
     /**
      * UI INDICATOR CONTROL
      * Updates the circular dot in the header to show sync status
