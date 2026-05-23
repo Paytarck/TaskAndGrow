@@ -344,13 +344,19 @@ async function syncCompletionToYearly(yearlyTaskId, monthIndex, completed) {
         const yearlyData = JSON.parse(localStorage.getItem('taskflow_yearly_data')) || {};
         const monthTasks = yearlyData[monthIndex] || [];
         const yt = monthTasks.find(t => t.id === yearlyTaskId);
-        if (yt) {
+        
+        if (yt && yt.completed !== completed) {
             yt.completed = completed;
+            yt.completedAt = completed ? new Date().toISOString() : null;
             yearlyData[monthIndex] = monthTasks;
-            // CRITICAL: This line sends the update to the other phone's Yearly list
+            
+            // Save the entire YEARLY object back to cloud
             await SyncManager.saveData('taskflow_yearly_data', yearlyData);
+            console.log("Yearly task status synced.");
         }
-    } catch(e) { console.error("Yearly Sync Error:", e); }
+    } catch(e) { 
+        console.error("Yearly Sync Error:", e); 
+    }
 }
 
 // ── Edit Task ──
