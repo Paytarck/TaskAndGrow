@@ -83,7 +83,13 @@
     </nav>
 
     <script type="module">
-        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    import { auth } from './firebase-config.js';
+    import { SyncManager } from './sync-manager.js';
+
+    // Fix for sync indicator and initials
+    SyncManager.initHeader(auth);
+
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         const yearlyData = JSON.parse(localStorage.getItem('taskflow_yearly_data')) || {};
         
         function init() {
