@@ -70,7 +70,7 @@ function performFullAutoSync() {
             const d = String(yt.day).padStart(2, '0');
 
             monthlyTasks.push({
-                id: 'y2m_' + yt.id + '_' + Date.now(),
+                id: 'y2m_' + yt.id,
                 yearlyTaskId: yt.id,
                 yearlyMonthIndex: monthIndex,
                 text: yt.text,
@@ -127,7 +127,7 @@ function performContinuousAutoSync() {
             const dueDate = targetYear + '-' + m + '-' + d;
 
             const newMonthlyTask = {
-                id: 'y2m_' + yt.id + '_' + Date.now(),
+                id: 'y2m_' + yt.id, 
                 yearlyTaskId: yt.id,
                 yearlyMonthIndex: monthIndex,
                 text: yt.text,
@@ -149,7 +149,7 @@ function performContinuousAutoSync() {
                 const existingDailySync = dailyTasks.find(dt => dt.yearlyTaskId === yt.id);
                 if (!existingDailySync) {
                     dailyTasks.push({
-                        id: 'y2d_' + yt.id + '_' + Date.now(),
+                        id: 'y2d_' + yt.id,
                         yearlyTaskId: yt.id,
                         yearlyMonthIndex: monthIndex,
                         monthlyTaskId: newMonthlyTask.id,
@@ -200,16 +200,11 @@ function setSyncToggle() {
 }
 
 function toggleSync() {
-    const toggle = document.getElementById('sync-toggle');
-    const enabled = toggle.checked;
+    const enabled = document.getElementById('sync-toggle').checked;
     localStorage.setItem(SYNC_KEY, enabled ? 'true' : 'false');
-    if (!enabled) {
-        localStorage.setItem(AUTO_SYNC_KEY, 'false');
-        const autoToggle = document.getElementById('auto-sync-toggle');
-        if (autoToggle) autoToggle.checked = false;
-    }
+    // This pushes the toggle state to Phone B
+    SyncManager.saveSettings(); 
     updateSyncUI();
-    showToast(enabled ? '🔗 Yearly Sync enabled' : 'Sync disabled');
 }
 
 function toggleAutoSync() {
