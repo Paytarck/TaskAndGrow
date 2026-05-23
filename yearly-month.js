@@ -249,7 +249,7 @@ function performImmediateSync() {
             const d = String(yt.day).padStart(2, '0');
 
             const newMonthlyTask = {
-                id: 'y2m_' + yt.id + '_' + Date.now(),
+                id: 'y2m_' + yt.id,
                 yearlyTaskId: yt.id,
                 yearlyMonthIndex: mIndex,
                 text: yt.text,
@@ -270,7 +270,7 @@ function performImmediateSync() {
                 const existingDailySync = dailyTasks.find(dt => dt.yearlyTaskId === yt.id);
                 if (!existingDailySync) {
                     dailyTasks.push({
-                        id: 'y2d_' + yt.id + '_' + Date.now(),
+                        id: 'y2d_' + yt.id,
                         yearlyTaskId: yt.id,
                         yearlyMonthIndex: mIndex,
                         monthlyTaskId: newMonthlyTask.id,
@@ -360,8 +360,9 @@ function saveData() {
     SyncManager.saveData('taskflow_yearly_data', yearlyData);
 }
 
-function syncCompletionToMonthlyAndDaily(yearlyTaskId) {
+async function syncCompletionToMonthlyAndDaily(yearlyTaskId) {
     try {
+        // 1. Update Monthly Cloud Data
         const monthlyTasks = JSON.parse(localStorage.getItem('taskflow_monthly_tasks')) || [];
         let monthlyChanged = false;
         monthlyTasks.forEach(mt => {
@@ -372,9 +373,10 @@ function syncCompletionToMonthlyAndDaily(yearlyTaskId) {
             }
         });
         if (monthlyChanged) {
-            localStorage.setItem('taskflow_monthly_tasks', JSON.stringify(monthlyTasks));
+            await SyncManager.saveData('taskflow_monthly_tasks', monthlyTasks);
         }
 
+        // 2. Update Daily Cloud Data
         const dailyTasks = JSON.parse(localStorage.getItem('taskflow_daily_tasks')) || [];
         let dailyChanged = false;
         dailyTasks.forEach(dt => {
@@ -385,9 +387,9 @@ function syncCompletionToMonthlyAndDaily(yearlyTaskId) {
             }
         });
         if (dailyChanged) {
-            localStorage.setItem('taskflow_daily_tasks', JSON.stringify(dailyTasks));
+            await SyncManager.saveData('taskflow_daily_tasks', dailyTasks);
         }
-    } catch (e) {}
+    } catch (e) { console.error("Bridge Sync Error:", e); }
 }
 
 function checkAndInjectToMonthly() {
@@ -410,7 +412,7 @@ function checkAndInjectToMonthly() {
             const d = String(yt.day).padStart(2, '0');
 
             monthlyTasks.push({
-                id: 'y2m_' + yt.id + '_' + Date.now(),
+                id: 'y2m_' + yt.id,
                 yearlyTaskId: yt.id,
                 yearlyMonthIndex: mIndex,
                 text: yt.text,
