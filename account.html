@@ -126,9 +126,9 @@
 
         <div class="divider"><span>OR</span></div>
         <button type="button" class="btn-google" onclick="handleGoogleLogin()">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/wait30/google_light.svg" class="google-logo-img" alt="Google"> 
-            Continue with Google
-        </button>
+    <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="Google"> 
+    Continue with Google
+</button>
     </section>
 
     <!-- VIEW 3: RESET PASSWORD (The new custom form) -->
@@ -200,6 +200,15 @@
         </div>
     </section>
 </main>
+
+<script type="module">
+        import { auth } from './firebase-config.js';
+import { SyncManager } from './sync-manager.js';
+
+// This line must exist on every page to keep headers synced!
+SyncManager.initHeader(auth);
+
+    </script>
 
     <script type="module" src="account.js"></script>
 
