@@ -670,19 +670,18 @@ async function runMonthlyToDailyBridge() {
 
     const todayDay = new Date().getDate();
     const monthlyTasks = JSON.parse(localStorage.getItem('taskflow_monthly_tasks')) || [];
-    let dailyTasks = JSON.parse(localStorage.getItem('taskflow_daily_tasks')) || [];
     let hasNewExport = false;
 
     const dueToday = monthlyTasks.filter(mt => mt.dueDay === todayDay && !mt.completed);
 
     dueToday.forEach(mt => {
-        // Deterministic ID: NO Date.now()
-       const deterministicId = 'm2d_' + mt.id;
-if (!tasks.find(t => t.id === deterministicId)) {
-    tasks.unshift({
-        id: deterministicId, 
-        monthlyTaskId: mt.id,
-        text: mt.text,
+        const deterministicId = 'm2d_' + mt.id;
+        // Check global 'tasks' array instead of re-reading from storage
+        if (!tasks.find(t => t.id === deterministicId)) {
+            tasks.unshift({
+                id: deterministicId, 
+                monthlyTaskId: mt.id,
+                text: mt.text,
                 fromMonthly: true,
                 completed: false,
                 createdAt: new Date().toISOString()
@@ -692,7 +691,8 @@ if (!tasks.find(t => t.id === deterministicId)) {
     });
 
     if (hasNewExport) {
-        await SyncManager.saveData('taskflow_daily_tasks', dailyTasks);
+        // This will trigger saveData AND re-render the UI
+        await SyncManager.saveData(STORAGE_KEY, tasks);
         renderAll();
     }
 }
