@@ -302,6 +302,15 @@
     <!-- ── TOAST ── -->
     <div class="toast" id="toast"></div>
 
+    <script type="module">
+        import { auth } from './firebase-config.js';
+import { SyncManager } from './sync-manager.js';
+
+// This line must exist on every page to keep headers synced!
+SyncManager.initHeader(auth);
+
+    </script>
+
    <script type="module" src="settings.js"></script>
 
 </body>
