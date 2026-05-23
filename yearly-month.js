@@ -562,26 +562,18 @@ import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/fi
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // 1. Initialize Real-Time Listener
-        SyncManager.initRealTimeData(user.uid, STORAGE_KEY, (updatedCloudObject) => {
-            // updatedCloudObject is { "0": [], "1": [], ... }
-            yearlyData = updatedCloudObject || {}; 
+        SyncManager.initRealTimeData(user.uid, STORAGE_KEY, (updatedYearlyObject) => {
+            // updatedYearlyObject contains ALL months {0: [...], 1: [...]}
+            yearlyData = updatedYearlyObject || {}; 
             
-            // CRITICAL FIX: Extract only the tasks for the current month index
-            tasks = yearlyData[mIndex]; 
-            
-            // If the month doesn't exist yet in cloud, default to empty array
-            if (!Array.isArray(tasks)) {
-                tasks = [];
-            }
+            // FIX: Only extract the specific month we are currently viewing
+            tasks = yearlyData[mIndex] || []; 
             
             renderAll();
-            console.log("Yearly data updated for month:", mIndex);
+            console.log("Monthly view updated from cloud.");
         });
 
         SyncManager.watchSettings(user.uid);
-        
-        // 2. Download and check bridge
         await SyncManager.downloadAllFromCloud();
         checkAndInjectToMonthly(); 
     }
