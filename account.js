@@ -31,6 +31,8 @@ import {
     updateProfile
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+SyncManager.initHeader(auth);
+
 /** ─── STATE MANAGEMENT ─── */
 let currentView = 'selection'; 
 let resetUserEmail = ""; // Stores email during identity verification flow
@@ -102,10 +104,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dateContainer) dateContainer.innerText = dateString;
 
     // Standardize Google Logo URL across all buttons
-    const googleIcons = document.querySelectorAll('.google-logo-img');
-    googleIcons.forEach(icon => {
-        icon.src = "https://www.gstatic.com/firebasejs/ui/2.0.0/images/wait30/google_light.svg";
-    });
+    const googleIcons = document.querySelectorAll('.google-logo-img, .btn-google img');
+googleIcons.forEach(icon => {
+    icon.src = "https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg";
+});
 
     setupPasswordStrengthTracker();
 });
